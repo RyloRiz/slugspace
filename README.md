@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UCSC Room Booker
+
+A Swiss Army knife room booking tool for UC Santa Cruz students. View real-time study room availability across both McHenry Library and the Science & Engineering Library, filter by floor/capacity, and jump straight to booking.
+
+## Features
+
+- **Real-time availability** — Fetches live data from the UCSC Library reservation system
+- **Card view** — Room cards showing available time blocks, longest consecutive slot, and capacity
+- **Grid view** — Timeline grid showing 30-minute slot availability across all rooms
+- **Smart filters** — Filter by floor, minimum capacity, or available-only rooms
+- **Direct booking links** — Click any available slot to open the UCSC booking page
+- **Auto-refresh** — Refreshes every 2 minutes to stay current
+- **Date navigation** — Browse availability for any date
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `app/api/availability/route.ts` — API proxy to the UCSC Library SpringShare availability endpoint
+- `app/lib/rooms.ts` — Static room metadata (IDs, names, floors, capacities)
+- `app/components/BookingDashboard.tsx` — Main dashboard with date navigation, filters, view toggle
+- `app/components/TimeGrid.tsx` — Grid view with per-room timeline
+- `app/components/RoomCards.tsx` — Card view with availability blocks
+- `app/components/QuickStats.tsx` — Summary statistics bar
 
-## Learn More
+## Room Data
 
-To learn more about Next.js, take a look at the following resources:
+### McHenry Library
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Category                     | Spaces | Floors         |
+| ---------------------------- | ------ | -------------- |
+| Study Rooms                  | 38     | Ground-4th     |
+| Digital Scholarship Commons  | 4      | Ground         |
+| Keyboard Room                | 1      | Ground         |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Science & Engineering Library
 
-## Deploy on Vercel
+| Category                     | Spaces | Floors         |
+| ---------------------------- | ------ | -------------- |
+| Study Rooms                  | 16     | 1st, 3rd       |
+| Innovation Studio (equipment)| 12     | Lower          |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Note on Booking Identity
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The UCSC Library API does **not** expose who booked a room. The API response only contains:
+
+- Time slots with `className: "s-lc-eq-checkout"` (available) or no className (booked)
+- A `bookings` array that is always empty for unauthenticated requests
+- No patron names, emails, or identifiers are returned
+
+This is by design — the system (SpringShare LibCal) protects user privacy. The `patronHash` variable exists in the page JavaScript but is only populated for authenticated sessions viewing their own bookings. There is no public endpoint to see who booked a given room.
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- React 19
+- Tailwind CSS 4
+- TypeScript

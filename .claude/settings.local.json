@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:calendar.library.ucsc.edu)",
+      "Bash(curl -s https://calendar.library.ucsc.edu/spaces/availability/grid -H 'accept: application/json, text/javascript, */*; q=0.01' -H 'content-type: application/x-www-form-urlencoded; charset=UTF-8' -H 'origin: https://calendar.library.ucsc.edu' -H 'referer: https://calendar.library.ucsc.edu/spaces' -H 'x-requested-with: XMLHttpRequest' --data-raw 'lid=16577&gid=34977&eid=-1&seat=0&seatId=0&zone=0&start=2026-05-19&end=2026-05-20&pageIndex=0&pageSize=18')",
+      "Bash(python3 -m json.tool)",
+      "Bash(pnpm build:*)",
+      "Bash(curl -s https://calendar.library.ucsc.edu/spaces/availability/grid -H 'accept: application/json' -H 'content-type: application/x-www-form-urlencoded; charset=UTF-8' -H 'origin: https://calendar.library.ucsc.edu' -H 'referer: https://calendar.library.ucsc.edu/spaces' -H 'x-requested-with: XMLHttpRequest' --data-raw 'lid=16578&gid=0&eid=-1&seat=0&seatId=0&zone=0&start=2026-05-20&end=2026-05-21&pageIndex=0&pageSize=50')",
+      "Bash(python3 -c ':*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(python3 -c \" import json, sys data = json.loads\\(sys.stdin.read\\(\\)\\) slots = data.get\\('slots', []\\) print\\(f'Slots returned for June 15: {len\\(slots\\)}'\\) if slots: print\\('First slot:', json.dumps\\(slots[0]\\)\\) \")",
+      "Bash(python3:*)"
+    ]
+  }
+}
