@@ -3,37 +3,67 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: #2563eb;
-  --color-primary-light: #3b82f6;
-  --color-accent: #f1b82d;
-  --color-accent-hover: #d9a526;
-  --color-surface: #f8fafc;
-  --color-surface-dark: #0f172a;
+  /* UCSC Official Brand Colors */
+  --color-primary: #003c6c;
+  --color-primary-light: #006aad;
+  --color-primary-hover: #002d52;
+  --color-secondary: #13a5dc;
+  --color-accent: #fdc700;
+  --color-accent-hover: #f29813;
+  --color-accent-light: #ffbf00;
+  --color-ucsc-green: #93c02d;
+  --color-ucsc-rubine: #da216d;
+  --color-ucsc-ocean: #007988;
+  --color-surface: #f4f6f8;
+  --color-surface-dark: #0e1a26;
   --color-card: #ffffff;
-  --color-card-dark: #1e293b;
-  --color-available: #22c55e;
-  --color-booked: #ef4444;
+  --color-card-dark: #162233;
+  --color-available: #16a34a;
+  --color-booked: #dc2626;
   --color-muted: #64748b;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-border: #dfe4ea;
+  --color-border-dark: #253547;
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-sans: var(--font-body);
+  --font-mono: ui-monospace, monospace;
 }
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f8f9fb;
+  --foreground: #0f1c2e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #020617;
-    --foreground: #f8fafc;
+    --background: #0a1120;
+    --foreground: #e8ecf2;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* Subtle noise grain overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+@media (prefers-color-scheme: dark) {
+  body::before {
+    opacity: 0.035;
+  }
 }
 
 /* Custom scrollbar */
@@ -47,10 +77,35 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #64748b;
+  background: #94a3b8;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #64748b;
+}
+
+/* Staggered fade-in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
 }

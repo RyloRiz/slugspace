@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { LOCATIONS, ROOMS } from "../lib/rooms";
 import { isSlotAvailable, isSlotFuture } from "../lib/slots";
@@ -12,9 +12,11 @@ import {
   ScheduleRecommendation,
   DayAvailability,
   SlotInfo,
+  CramPreferences,
   defaultPreferences,
   getUpcomingDates,
   generateSchedule,
+  generateCramOptions,
 } from "../lib/planner";
 import type { SlotData } from "../components/TimeGrid";
 
@@ -74,6 +76,17 @@ const DURATION_OPTIONS = [
   { value: 240, label: "4hr" },
 ];
 
+type CramStep = "setup" | "loading" | "results";
+
+const CRAM_DURATION_OPTIONS = [
+  { value: 30, label: "30m" },
+  { value: 60, label: "1 hr" },
+  { value: 90, label: "1.5 hr" },
+  { value: 120, label: "2 hr" },
+  { value: 180, label: "3 hr" },
+  { value: 240, label: "4 hr" },
+];
+
 export default function StudyPlanner() {
   const { ids: favoriteIds } = useFavorites();
   const [step, setStep] = useState<Step>("preferences");
@@ -84,6 +97,27 @@ export default function StudyPlanner() {
   const [result, setResult] = useState<ScheduleRecommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // ── Cram session state ──
+  const [cramStep, setCramStep] = useState<CramStep>("setup");
+  const [cramPrefs, setCramPrefs] = useState<CramPreferences>({
+    date: todayStr(),
+    sessionDuration: 120,
+    groupSize: 1,
+    locationPreference: "any",
+  });
+  const [cramResults, setCramResults] = useState<CandidateBlock[]>([]);
+  const [cramError, setCramError] = useState<string | null>(null);
+  const cramDateInputRef = useRef<HTMLInputElement>(null);
+
+  const advancedCount =
+    (prefs.groupSize > 1 ? 1 : 0) +
+    prefs.floorPreferences.length +
+    (prefs.roomFilter !== "all" ? 1 : 0) +
+    (prefs.schedulingStyle !== "flexible" ? 1 : 0) +
+    (prefs.preferSameRoom ? 1 : 0);
 
   const updatePref = <K extends keyof StudyPreferences>(key: K, val: StudyPreferences[K]) => {
     setPrefs((p) => ({ ...p, [key]: val }));
@@ -300,6 +334,83 @@ export default function StudyPlanner() {
     }
   }, [prefs, favoriteIds]);
 
+  const runCramSearch = useCallback(async () => {
+    setCramStep("loading");
+    setCramError(null);
+    setCramResults([]);
+
+    try {
+      const today = todayStr();
+      const end = tomorrowStr(cramPrefs.date);
+
+      // Determine which groups to fetch
+      const groupsToFetch: { lid: number; gid: number }[] = [];
+      if (cramPrefs.locationPreference === "any") {
+        for (const loc of LOCATIONS) {
+          for (const group of loc.groups) {
+            groupsToFetch.push({ lid: loc.id, gid: group.id });
+          }
+        }
+      } else {
+        const loc = LOCATIONS.find((l) => l.id === cramPrefs.locationPreference);
+        if (loc) {
+          for (const group of loc.groups) {
+            groupsToFetch.push({ lid: loc.id, gid: group.id });
+          }
+        }
+      }
+
+      const daySlots: SlotInfo[] = [];
+
+      const fetches = groupsToFetch.map(async ({ lid, gid }) => {
+        try {
+          const res = await fetch(`/api/availability?start=${cramPrefs.date}&end=${end}&lid=${lid}&gid=${gid}`);
+          if (!res.ok) return [];
+          const data = await res.json();
+          return (data.slots || []) as SlotData[];
+        } catch {
+          return [];
+        }
+      });
+
+      const results = await Promise.all(fetches);
+      for (const slots of results) {
+        for (const s of slots) {
+          daySlots.push({
+            start: s.start,
+            end: s.end,
+            itemId: s.itemId,
+            checksum: s.checksum,
+            available: isSlotAvailable(s),
+            future: isSlotFuture(s, today),
+          });
+        }
+      }
+
+      if (daySlots.length === 0) {
+        setCramError("No availability data for this date. Bookings may not be open yet, or the library may be closed.");
+        setCramStep("setup");
+        return;
+      }
+
+      const options = generateCramOptions(
+        cramPrefs,
+        { date: cramPrefs.date, slots: daySlots },
+        ROOMS,
+        favoriteIds
+      );
+
+      setCramResults(options);
+      setCramStep("results");
+    } catch {
+      setCramError("Something went wrong. Please try again.");
+      setCramStep("setup");
+    }
+  }, [cramPrefs, favoriteIds]);
+
+  const cramDateDisplay = formatDateShort(cramPrefs.date);
+  const isCramToday = cramPrefs.date === todayStr();
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -348,19 +459,11 @@ export default function StudyPlanner() {
         {/* ── PREFERENCES FORM ── */}
         {step === "preferences" && (
           <div className="space-y-4">
-            {/* ── Card 1: Sessions & Duration ── */}
-            <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-5">
-              <legend className="sr-only">Study goals</legend>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg className="w-4.5 h-4.5 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
-                  </svg>
-                </div>
-                <h2 className="text-sm font-semibold text-foreground">How much do you want to study?</h2>
-              </div>
+            {/* ── Essentials card ── */}
+            <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-6">
+              <legend className="sr-only">Study preferences</legend>
 
-              {/* Sessions per week — segmented buttons */}
+              {/* Sessions per week */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted uppercase tracking-wider" id="sessions-label">Sessions per week</label>
                 <div className="flex gap-1.5" role="radiogroup" aria-labelledby="sessions-label">
@@ -382,7 +485,7 @@ export default function StudyPlanner() {
                 </div>
               </div>
 
-              {/* Duration — pill buttons */}
+              {/* Duration */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted uppercase tracking-wider" id="duration-label">Duration each session</label>
                 <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="duration-label">
@@ -406,21 +509,11 @@ export default function StudyPlanner() {
                   <p className="text-[11px] text-accent">This is the maximum allowed per UCSC Library policy.</p>
                 )}
               </div>
-            </fieldset>
 
-            {/* ── Card 2: When ── */}
-            <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-5">
-              <legend className="sr-only">When to study</legend>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg className="w-4.5 h-4.5 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h2 className="text-sm font-semibold text-foreground">When do you want to study?</h2>
-              </div>
+              {/* Divider */}
+              <div className="border-t border-slate-100 dark:border-slate-800" />
 
-              {/* Days — two-row grid on mobile for better touch targets */}
+              {/* Days */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted uppercase tracking-wider" id="days-label">Preferred days</label>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5" role="group" aria-labelledby="days-label">
@@ -461,7 +554,7 @@ export default function StudyPlanner() {
                       onClick={() => updatePref("timePreference", { type })}
                       role="radio"
                       aria-checked={prefs.timePreference.type === type || (prefs.timePreference.type === "custom" && type !== "flexible")}
-                      className={`p-3 min-h-[72px] rounded-lg text-left transition-all cursor-pointer border flex flex-col justify-center ${
+                      className={`p-3 min-h-[60px] rounded-lg text-left transition-all cursor-pointer border flex flex-col justify-center ${
                         prefs.timePreference.type === type
                           ? "bg-primary/10 border-primary/40 dark:bg-primary/20 shadow-sm"
                           : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -475,12 +568,11 @@ export default function StudyPlanner() {
                           {label}
                         </span>
                       </div>
-                      <span className="text-[11px] text-muted mt-1 pl-6">{sub}</span>
+                      <span className="text-[11px] text-muted mt-0.5 pl-6">{sub}</span>
                     </button>
                   ))}
                 </div>
 
-                {/* Custom range - inline reveal */}
                 {prefs.timePreference.type !== "flexible" && prefs.timePreference.type !== "custom" && (
                   <button
                     onClick={() => updatePref("timePreference", {
@@ -538,254 +630,239 @@ export default function StudyPlanner() {
                   </div>
                 )}
               </div>
-            </fieldset>
 
-            {/* ── Card 3: Where ── */}
-            <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-5">
-              <legend className="sr-only">Room preferences</legend>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg className="w-4.5 h-4.5 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21" />
-                  </svg>
-                </div>
-                <h2 className="text-sm font-semibold text-foreground">Where do you want to study?</h2>
-              </div>
+              {/* Divider */}
+              <div className="border-t border-slate-100 dark:border-slate-800" />
 
-              {/* Building + Group size row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="group-size" className="text-xs font-medium text-muted uppercase tracking-wider">Group size</label>
-                  <select
-                    id="group-size"
-                    value={prefs.groupSize}
-                    onChange={(e) => updatePref("groupSize", parseInt(e.target.value))}
-                    className="w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    <option value={1}>Just me</option>
-                    <option value={2}>2 people</option>
-                    <option value={4}>3–4 people</option>
-                    <option value={6}>5–6 people</option>
-                    <option value={8}>7–8 people</option>
-                    <option value={10}>9–10 people</option>
-                    <option value={14}>11–14 people</option>
-                    <option value={20}>15+ people</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="building" className="text-xs font-medium text-muted uppercase tracking-wider">Building</label>
-                  <select
-                    id="building"
-                    value={prefs.locationPreference === "any" ? "any" : String(prefs.locationPreference)}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      updatePref("locationPreference", v === "any" ? "any" : parseInt(v));
-                      updatePref("floorPreferences", []);
-                      if (prefs.roomFilter === "custom") updatePref("selectedRoomIds", []);
-                    }}
-                    className="w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    <option value="any">Either building</option>
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Floor filter — multi-select pills grouped by building */}
-              <div className="space-y-3">
-                <label className="text-xs font-medium text-muted uppercase tracking-wider" id="floor-label">Floors</label>
-                {floorsByBuilding.map(({ location, floors }) => (
-                  <div key={location.id} className="space-y-1.5">
-                    {floorsByBuilding.length > 1 && (
-                      <p className="text-[11px] font-medium text-muted">{location.shortName}</p>
-                    )}
-                    <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${location.shortName} floors`}>
-                      {floors.map(({ name, hasRooms }) => {
-                        const isSelected = prefs.floorPreferences.includes(name);
-                        return (
-                          <button
-                            key={name}
-                            onClick={() => hasRooms && toggleFloor(name)}
-                            aria-pressed={isSelected}
-                            disabled={!hasRooms}
-                            className={`px-3 min-h-[36px] rounded-lg text-xs font-semibold transition-all border ${
-                              !hasRooms
-                                ? "border-slate-200 dark:border-slate-700 text-muted/30 cursor-not-allowed line-through"
-                                : isSelected
-                                  ? "bg-primary text-white border-primary shadow-sm cursor-pointer"
-                                  : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer"
-                            }`}
-                          >
-                            {name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-                <p className="text-[11px] text-muted">
-                  {prefs.floorPreferences.length === 0 ? "Any floor" : `${prefs.floorPreferences.length} floor${prefs.floorPreferences.length > 1 ? "s" : ""} selected`}
-                </p>
-              </div>
-
-              {/* Room filter mode */}
+              {/* Building — inline in basics */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted uppercase tracking-wider" id="room-filter-label">Which rooms?</label>
-                <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-labelledby="room-filter-label">
-                  {([
-                    { value: "all" as const, label: "All rooms", icon: "M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" },
-                    { value: "favorites" as const, label: "Favorites", icon: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" },
-                    { value: "custom" as const, label: "Pick rooms", icon: "M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" },
-                  ]).map(({ value, label, icon }) => (
+                <label htmlFor="building" className="text-xs font-medium text-muted uppercase tracking-wider">Building</label>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => { updatePref("locationPreference", "any"); updatePref("floorPreferences", []); }}
+                    className={`flex-1 min-h-[44px] rounded-lg text-sm font-semibold transition-all cursor-pointer border ${
+                      prefs.locationPreference === "any"
+                        ? "bg-primary text-white border-primary shadow-sm"
+                        : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600"
+                    }`}
+                  >
+                    Either
+                  </button>
+                  {LOCATIONS.map((loc) => (
                     <button
-                      key={value}
-                      onClick={() => {
-                        updatePref("roomFilter", value);
-                        if (value !== "custom") updatePref("selectedRoomIds", []);
-                      }}
-                      role="radio"
-                      aria-checked={prefs.roomFilter === value}
-                      disabled={value === "favorites" && favoriteIds.length === 0}
-                      className={`flex items-center justify-center gap-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                        prefs.roomFilter === value
-                          ? "bg-primary/10 border-primary/40 text-primary dark:bg-primary/20 shadow-sm"
-                          : value === "favorites" && favoriteIds.length === 0
-                            ? "border-slate-200 dark:border-slate-700 text-muted/40 cursor-not-allowed"
-                            : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600"
+                      key={loc.id}
+                      onClick={() => { updatePref("locationPreference", loc.id); updatePref("floorPreferences", []); if (prefs.roomFilter === "custom") updatePref("selectedRoomIds", []); }}
+                      className={`flex-1 min-h-[44px] rounded-lg text-sm font-semibold transition-all cursor-pointer border ${
+                        prefs.locationPreference === loc.id
+                          ? "bg-primary text-white border-primary shadow-sm"
+                          : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600"
                       }`}
                     >
-                      <svg className="w-3.5 h-3.5" fill={value === "favorites" && prefs.roomFilter === "favorites" ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-                      </svg>
-                      {label}
+                      {loc.shortName}
                     </button>
                   ))}
                 </div>
-                {prefs.roomFilter === "favorites" && favoriteIds.length > 0 && (
-                  <p className="text-[11px] text-muted">
-                    Only your {favoriteIds.length} favorite{favoriteIds.length > 1 ? " rooms" : " room"} will be considered.
-                  </p>
-                )}
-                {prefs.roomFilter === "all" && favoriteIds.length > 0 && (
-                  <p className="text-[11px] text-muted">
-                    All eligible rooms — {favoriteIds.length} favorite{favoriteIds.length > 1 ? "s" : ""} will be scored higher.
-                  </p>
-                )}
               </div>
+            </fieldset>
 
-              {/* Room picker — shown when "custom" mode */}
-              {prefs.roomFilter === "custom" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-muted">
-                      {prefs.selectedRoomIds.length === 0
-                        ? "No rooms selected — all eligible rooms will be used"
-                        : `${prefs.selectedRoomIds.length} room${prefs.selectedRoomIds.length > 1 ? "s" : ""} selected`}
-                    </p>
-                    {prefs.selectedRoomIds.length > 0 && (
-                      <button
-                        onClick={() => updatePref("selectedRoomIds", [])}
-                        className="text-[11px] text-primary hover:underline cursor-pointer"
-                      >
-                        Clear all
-                      </button>
-                    )}
+            {/* ── Customize further toggle ── */}
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-muted hover:text-foreground hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer"
+            >
+              <svg className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+              {showAdvanced ? "Hide advanced options" : "Customize further"}
+              {!showAdvanced && advancedCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
+                  {advancedCount}
+                </span>
+              )}
+            </button>
+
+            {/* ── Advanced options ── */}
+            {showAdvanced && (
+              <div className="space-y-4">
+                {/* Group size + Floors */}
+                <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-5">
+                  <legend className="sr-only">Room preferences</legend>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="group-size" className="text-xs font-medium text-muted uppercase tracking-wider">Group size</label>
+                    <select
+                      id="group-size"
+                      value={prefs.groupSize}
+                      onChange={(e) => updatePref("groupSize", parseInt(e.target.value))}
+                      className="w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value={1}>Just me</option>
+                      <option value={2}>2 people</option>
+                      <option value={4}>3–4 people</option>
+                      <option value={6}>5–6 people</option>
+                      <option value={8}>7–8 people</option>
+                      <option value={10}>9–10 people</option>
+                      <option value={14}>11–14 people</option>
+                      <option value={20}>15+ people</option>
+                    </select>
                   </div>
-                  <div className="max-h-60 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800">
-                    {roomsByGroup.map(({ label, rooms }) => (
-                      <div key={label}>
-                        <div className="sticky top-0 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 backdrop-blur-sm">
-                          <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">{label}</span>
+
+                  {/* Floor filter */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-medium text-muted uppercase tracking-wider" id="floor-label">Floors</label>
+                    {floorsByBuilding.map(({ location, floors }) => (
+                      <div key={location.id} className="space-y-1.5">
+                        {floorsByBuilding.length > 1 && (
+                          <p className="text-[11px] font-medium text-muted">{location.shortName}</p>
+                        )}
+                        <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${location.shortName} floors`}>
+                          {floors.map(({ name, hasRooms }) => {
+                            const isSelected = prefs.floorPreferences.includes(name);
+                            return (
+                              <button
+                                key={name}
+                                onClick={() => hasRooms && toggleFloor(name)}
+                                aria-pressed={isSelected}
+                                disabled={!hasRooms}
+                                className={`px-3 min-h-[36px] rounded-lg text-xs font-semibold transition-all border ${
+                                  !hasRooms
+                                    ? "border-slate-200 dark:border-slate-700 text-muted/30 cursor-not-allowed line-through"
+                                    : isSelected
+                                      ? "bg-primary text-white border-primary shadow-sm cursor-pointer"
+                                      : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer"
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
                         </div>
-                        {rooms.map((room) => (
-                          <label
-                            key={room.id}
-                            className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={prefs.selectedRoomIds.includes(room.id)}
-                              onChange={() => toggleSelectedRoom(room.id)}
-                              className="w-4 h-4 rounded accent-primary cursor-pointer shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm text-foreground truncate block">{room.name}</span>
-                            </div>
-                            <span className="text-[10px] text-muted shrink-0">{room.capacity} seats</span>
-                            {favoriteIds.includes(room.id) && (
-                              <svg className="w-3 h-3 text-accent shrink-0" viewBox="0 0 24 24" fill="currentColor" strokeWidth={0}>
-                                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                              </svg>
-                            )}
-                          </label>
-                        ))}
                       </div>
                     ))}
-                    {roomsByGroup.length === 0 && (
-                      <div className="px-3 py-6 text-center text-xs text-muted">
-                        No rooms match your current filters.
-                      </div>
+                    <p className="text-[11px] text-muted">
+                      {prefs.floorPreferences.length === 0 ? "Any floor" : `${prefs.floorPreferences.length} floor${prefs.floorPreferences.length > 1 ? "s" : ""} selected`}
+                    </p>
+                  </div>
+
+                  {/* Room filter mode */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted uppercase tracking-wider" id="room-filter-label">Which rooms?</label>
+                    <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-labelledby="room-filter-label">
+                      {([
+                        { value: "all" as const, label: "All rooms", icon: "M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" },
+                        { value: "favorites" as const, label: "Favorites", icon: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" },
+                        { value: "custom" as const, label: "Pick rooms", icon: "M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" },
+                      ]).map(({ value, label, icon }) => (
+                        <button
+                          key={value}
+                          onClick={() => { updatePref("roomFilter", value); if (value !== "custom") updatePref("selectedRoomIds", []); }}
+                          role="radio"
+                          aria-checked={prefs.roomFilter === value}
+                          disabled={value === "favorites" && favoriteIds.length === 0}
+                          className={`flex items-center justify-center gap-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                            prefs.roomFilter === value
+                              ? "bg-primary/10 border-primary/40 text-primary dark:bg-primary/20 shadow-sm"
+                              : value === "favorites" && favoriteIds.length === 0
+                                ? "border-slate-200 dark:border-slate-700 text-muted/40 cursor-not-allowed"
+                                : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600"
+                          }`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill={value === "favorites" && prefs.roomFilter === "favorites" ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                          </svg>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {prefs.roomFilter === "favorites" && favoriteIds.length > 0 && (
+                      <p className="text-[11px] text-muted">Only your {favoriteIds.length} favorite{favoriteIds.length > 1 ? " rooms" : " room"} will be considered.</p>
+                    )}
+                    {prefs.roomFilter === "all" && favoriteIds.length > 0 && (
+                      <p className="text-[11px] text-muted">All eligible rooms — {favoriteIds.length} favorite{favoriteIds.length > 1 ? "s" : ""} will be scored higher.</p>
                     )}
                   </div>
-                </div>
-              )}
-            </fieldset>
 
-            {/* ── Card 4: Style ── */}
-            <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-4">
-              <legend className="sr-only">Scheduling style</legend>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg className="w-4.5 h-4.5 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                  </svg>
-                </div>
-                <h2 className="text-sm font-semibold text-foreground">How should sessions be scheduled?</h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Scheduling style">
-                {([
-                  { value: "spread" as const, label: "Spread out", desc: "Rest days between sessions", icon: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" },
-                  { value: "packed" as const, label: "Back-to-back", desc: "Sessions on consecutive days", icon: "M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" },
-                  { value: "flexible" as const, label: "Best fit", desc: "Highest-scoring slots win", icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" },
-                ]).map(({ value, label, desc, icon }) => (
-                  <button
-                    key={value}
-                    onClick={() => updatePref("schedulingStyle", value)}
-                    role="radio"
-                    aria-checked={prefs.schedulingStyle === value}
-                    className={`p-3 min-h-[72px] rounded-lg text-left transition-all cursor-pointer border flex flex-col justify-center ${
-                      prefs.schedulingStyle === value
-                        ? "bg-primary/10 border-primary/40 dark:bg-primary/20 shadow-sm"
-                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <svg className={`w-4 h-4 shrink-0 ${prefs.schedulingStyle === value ? "text-primary" : "text-muted"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-                      </svg>
-                      <span className={`text-sm font-semibold ${prefs.schedulingStyle === value ? "text-primary" : "text-foreground"}`}>
-                        {label}
-                      </span>
+                  {/* Room picker */}
+                  {prefs.roomFilter === "custom" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] text-muted">
+                          {prefs.selectedRoomIds.length === 0
+                            ? "No rooms selected — all eligible rooms will be used"
+                            : `${prefs.selectedRoomIds.length} room${prefs.selectedRoomIds.length > 1 ? "s" : ""} selected`}
+                        </p>
+                        {prefs.selectedRoomIds.length > 0 && (
+                          <button onClick={() => updatePref("selectedRoomIds", [])} className="text-[11px] text-primary hover:underline cursor-pointer">Clear all</button>
+                        )}
+                      </div>
+                      <div className="max-h-60 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800">
+                        {roomsByGroup.map(({ label, rooms }) => (
+                          <div key={label}>
+                            <div className="sticky top-0 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 backdrop-blur-sm">
+                              <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">{label}</span>
+                            </div>
+                            {rooms.map((room) => (
+                              <label key={room.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+                                <input type="checkbox" checked={prefs.selectedRoomIds.includes(room.id)} onChange={() => toggleSelectedRoom(room.id)} className="w-4 h-4 rounded accent-primary cursor-pointer shrink-0" />
+                                <div className="flex-1 min-w-0"><span className="text-sm text-foreground truncate block">{room.name}</span></div>
+                                <span className="text-[10px] text-muted shrink-0">{room.capacity} seats</span>
+                                {favoriteIds.includes(room.id) && (
+                                  <svg className="w-3 h-3 text-accent shrink-0" viewBox="0 0 24 24" fill="currentColor" strokeWidth={0}>
+                                    <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                                  </svg>
+                                )}
+                              </label>
+                            ))}
+                          </div>
+                        ))}
+                        {roomsByGroup.length === 0 && (
+                          <div className="px-3 py-6 text-center text-xs text-muted">No rooms match your current filters.</div>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[11px] text-muted mt-1 pl-6">{desc}</span>
-                  </button>
-                ))}
-              </div>
+                  )}
+                </fieldset>
 
-              <label className="flex items-center gap-2.5 cursor-pointer min-h-[36px]">
-                <input
-                  type="checkbox"
-                  checked={prefs.preferSameRoom}
-                  onChange={(e) => updatePref("preferSameRoom", e.target.checked)}
-                  className="w-4.5 h-4.5 rounded accent-primary cursor-pointer"
-                />
-                <span className="text-sm text-foreground">Prefer same room each session</span>
-              </label>
-            </fieldset>
+                {/* Scheduling style */}
+                <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-4">
+                  <legend className="sr-only">Scheduling style</legend>
+                  <label className="text-xs font-medium text-muted uppercase tracking-wider">Scheduling style</label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Scheduling style">
+                    {([
+                      { value: "spread" as const, label: "Spread out", desc: "Rest days between sessions", icon: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" },
+                      { value: "packed" as const, label: "Back-to-back", desc: "Sessions on consecutive days", icon: "M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" },
+                      { value: "flexible" as const, label: "Best fit", desc: "Highest-scoring slots win", icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" },
+                    ]).map(({ value, label, desc, icon }) => (
+                      <button
+                        key={value}
+                        onClick={() => updatePref("schedulingStyle", value)}
+                        role="radio"
+                        aria-checked={prefs.schedulingStyle === value}
+                        className={`p-3 min-h-[60px] rounded-lg text-left transition-all cursor-pointer border flex flex-col justify-center ${
+                          prefs.schedulingStyle === value
+                            ? "bg-primary/10 border-primary/40 dark:bg-primary/20 shadow-sm"
+                            : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg className={`w-4 h-4 shrink-0 ${prefs.schedulingStyle === value ? "text-primary" : "text-muted"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                          </svg>
+                          <span className={`text-sm font-semibold ${prefs.schedulingStyle === value ? "text-primary" : "text-foreground"}`}>{label}</span>
+                        </div>
+                        <span className="text-[11px] text-muted mt-0.5 pl-6">{desc}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer min-h-[36px]">
+                    <input type="checkbox" checked={prefs.preferSameRoom} onChange={(e) => updatePref("preferSameRoom", e.target.checked)} className="w-4.5 h-4.5 rounded accent-primary cursor-pointer" />
+                    <span className="text-sm text-foreground">Prefer same room each session</span>
+                  </label>
+                </fieldset>
+              </div>
+            )}
 
             {/* ── Live summary + submit ── */}
             <div className="sticky bottom-0 bg-background pt-3 pb-4 -mx-4 px-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
@@ -915,6 +992,243 @@ export default function StudyPlanner() {
         )}
       </main>
 
+      {/* ── CRAM SESSION SECTION ── */}
+      <section className="border-t-4 border-accent/30">
+        <div className="max-w-2xl w-full mx-auto px-4 py-8 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground leading-tight" style={{ fontFamily: "var(--font-display)" }}>
+                Cram Session
+              </h2>
+              <p className="text-xs text-muted">Find available rooms for a single day — perfect for last-minute study sessions.</p>
+            </div>
+          </div>
+
+          {cramError && (
+            <div className="rounded-xl border border-booked/30 bg-booked/5 p-4 text-sm text-booked flex items-start gap-3" role="alert">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              {cramError}
+            </div>
+          )}
+
+          {cramStep === "setup" && (
+            <div className="space-y-4">
+              <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-5">
+                <legend className="sr-only">Cram session preferences</legend>
+
+                {/* Date picker */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted uppercase tracking-wider">Date</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={cramDateInputRef}
+                      type="date"
+                      value={cramPrefs.date}
+                      min={todayStr()}
+                      onChange={(e) => {
+                        if (e.target.value >= todayStr()) setCramPrefs((p) => ({ ...p, date: e.target.value }));
+                      }}
+                      className="sr-only"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => cramDateInputRef.current?.showPicker()}
+                      className="flex-1 flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-left hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-4.5 h-4.5 text-muted shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                      <span className="text-sm font-semibold text-foreground">{cramDateDisplay}</span>
+                      {isCramToday && (
+                        <span className="px-2 py-0.5 rounded-md bg-available/10 text-available text-[10px] font-bold uppercase">Today</span>
+                      )}
+                    </button>
+                    {!isCramToday && (
+                      <button
+                        onClick={() => setCramPrefs((p) => ({ ...p, date: todayStr() }))}
+                        className="px-3 py-2 min-h-[48px] rounded-xl text-xs font-semibold text-primary border border-primary/20 hover:bg-primary/5 transition-colors cursor-pointer"
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted uppercase tracking-wider">How long do you need?</label>
+                  <div className="flex flex-wrap gap-2">
+                    {CRAM_DURATION_OPTIONS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setCramPrefs((p) => ({ ...p, sessionDuration: value }))}
+                        className={`px-4 min-h-[44px] rounded-xl text-sm font-semibold transition-all cursor-pointer border ${
+                          cramPrefs.sessionDuration === value
+                            ? "bg-accent text-primary border-accent shadow-sm"
+                            : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {cramPrefs.sessionDuration === 240 && (
+                    <p className="text-[11px] text-accent">Maximum allowed per UCSC Library policy.</p>
+                  )}
+                </div>
+
+                {/* Location + group size row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label htmlFor="cram-group-size" className="text-xs font-medium text-muted uppercase tracking-wider">Group size</label>
+                    <select
+                      id="cram-group-size"
+                      value={cramPrefs.groupSize}
+                      onChange={(e) => setCramPrefs((p) => ({ ...p, groupSize: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value={1}>Just me</option>
+                      <option value={2}>2 people</option>
+                      <option value={4}>3–4 people</option>
+                      <option value={6}>5–6 people</option>
+                      <option value={8}>7–8 people</option>
+                      <option value={10}>9–10 people</option>
+                      <option value={14}>11–14 people</option>
+                      <option value={20}>15+ people</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="cram-building" className="text-xs font-medium text-muted uppercase tracking-wider">Building</label>
+                    <select
+                      id="cram-building"
+                      value={cramPrefs.locationPreference === "any" ? "any" : String(cramPrefs.locationPreference)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setCramPrefs((p) => ({ ...p, locationPreference: v === "any" ? "any" : parseInt(v) }));
+                      }}
+                      className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="any">Either building</option>
+                      {LOCATIONS.map((loc) => (
+                        <option key={loc.id} value={loc.id}>{loc.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+
+              <button
+                onClick={runCramSearch}
+                className="w-full py-3.5 rounded-xl bg-accent text-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
+              >
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+                Find available slots
+              </button>
+            </div>
+          )}
+
+          {cramStep === "loading" && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-10 text-center space-y-4">
+              <div className="w-10 h-10 border-[3px] border-accent/30 border-t-accent rounded-full animate-spin mx-auto" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Scanning {cramDateDisplay}...</p>
+                <p className="text-xs text-muted mt-1">Checking all rooms for available blocks</p>
+              </div>
+            </div>
+          )}
+
+          {cramStep === "results" && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className={`rounded-xl border p-4 flex items-center justify-between ${
+                cramResults.length > 0
+                  ? "border-available/30 bg-available/5"
+                  : "border-booked/30 bg-booked/5"
+              }`}>
+                <div className="flex items-center gap-3">
+                  {cramResults.length > 0 ? (
+                    <div className="w-8 h-8 rounded-lg bg-available/15 text-available flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-booked/15 text-booked flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {cramResults.length > 0
+                        ? `${cramResults.length} slot${cramResults.length > 1 ? "s" : ""} available`
+                        : "No matching slots found"}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {cramDateDisplay} · {formatDurationLong(cramPrefs.sessionDuration)}
+                      {cramPrefs.groupSize > 1 ? ` · ${cramPrefs.groupSize}+ seats` : ""}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCramStep("setup")}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                >
+                  Edit
+                </button>
+              </div>
+
+              {/* Results list */}
+              {cramResults.length > 0 ? (
+                <div className="space-y-2">
+                  {cramResults.map((block) => (
+                    <CramResultRow key={`${block.room.id}-${block.startTime}`} block={block} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-8 text-center space-y-3">
+                  <p className="text-xs text-muted max-w-xs mx-auto">Try a different date, shorter duration, or a different building.</p>
+                  <button
+                    onClick={() => setCramStep("setup")}
+                    className="px-4 py-2.5 rounded-lg text-xs font-medium bg-accent text-primary hover:bg-accent-hover transition-colors cursor-pointer"
+                  >
+                    Adjust preferences
+                  </button>
+                </div>
+              )}
+
+              {cramResults.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setCramStep("setup")}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-muted hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Change criteria
+                  </button>
+                  <button
+                    onClick={runCramSearch}
+                    className="flex-1 py-2.5 rounded-xl bg-accent text-primary text-sm font-bold hover:bg-accent-hover transition-colors cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
       <footer className="border-t border-slate-200 dark:border-slate-700 py-4 mt-auto">
         <div className="max-w-2xl mx-auto px-4 text-xs text-muted text-center">
           Recommendations are based on real-time availability. Book quickly — slots fill up fast.
@@ -1011,6 +1325,58 @@ function ResultCard({ block, index }: { block: CandidateBlock; index: number }) 
             ))}
           </div>
         </details>
+      </div>
+    </div>
+  );
+}
+
+// ── Cram Result Row ──
+
+function CramResultRow({ block }: { block: CandidateBlock }) {
+  const loc = LOCATIONS.find((l) => l.id === block.room.locationId);
+  const { isFavorite } = useFavorites();
+  const faved = isFavorite(block.room.id);
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark overflow-hidden hover:border-available/30 transition-colors">
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Time block */}
+        <div className="shrink-0 text-center min-w-[72px]">
+          <p className="text-sm font-bold text-foreground tabular-nums">{formatTime(block.startTime)}</p>
+          <p className="text-[10px] text-muted tabular-nums">{formatTime(block.endTime)}</p>
+        </div>
+
+        <div className="w-px h-10 bg-slate-200 dark:bg-slate-700 shrink-0" />
+
+        {/* Room info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={`/room/${block.room.id}?date=${block.date}`}
+              className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
+            >
+              {block.room.name}
+            </Link>
+            {faved && (
+              <svg className="w-3 h-3 text-accent shrink-0" viewBox="0 0 24 24" fill="currentColor" strokeWidth={0}>
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+              </svg>
+            )}
+          </div>
+          <p className="text-[11px] text-muted truncate">
+            {loc?.shortName} · {block.room.floor} Floor · {block.room.capacity} seats · {formatDuration(block.durationMins)}
+          </p>
+        </div>
+
+        {/* Book button */}
+        <a
+          href={bookingUrl(block.room.id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 min-h-[36px] rounded-xl bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
+        >
+          Book
+        </a>
       </div>
     </div>
   );

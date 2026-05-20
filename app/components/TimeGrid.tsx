@@ -48,7 +48,6 @@ function getTimeSlots(slots: SlotData[]): string[] {
   return Array.from(times).sort();
 }
 
-/** Get the fractional position of "now" within the time range, or null if outside. */
 function getNowPosition(timeSlots: string[], today: string, date: string): number | null {
   if (date !== today || timeSlots.length === 0) return null;
   const now = new Date();
@@ -102,7 +101,6 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
     }).sort((a, b) => b.bookable - a.bookable);
   }, [rooms, timeSlots, slotMap, today]);
 
-  // Hour markers for the header
   const hourMarkers = useMemo(() => {
     const markers: { idx: number; label: string }[] = [];
     timeSlots.forEach((time, idx) => {
@@ -121,7 +119,6 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
     );
   }
 
-  // Hovered cell info for the floating detail panel
   const hoveredInfo = hoveredRoom !== null && hoveredSlotIdx !== null
     ? (() => {
         const rd = roomData.find((r) => r.room.id === hoveredRoom);
@@ -134,12 +131,12 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
 
   return (
     <div>
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark overflow-hidden">
+      <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           {/* Time axis header */}
-          <div className="flex border-b border-slate-200 dark:border-slate-700">
-            <div className="shrink-0 w-48 min-w-[192px] px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-r border-slate-200 dark:border-slate-700 flex items-end">
-              <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Room</span>
+          <div className="flex border-b border-border dark:border-border-dark">
+            <div className="shrink-0 w-48 min-w-[192px] px-4 py-2.5 bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark flex items-end">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Room</span>
             </div>
             <div className="flex-1 flex items-end relative min-w-0">
               {timeSlots.map((time, idx) => {
@@ -151,21 +148,20 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                   >
                     {isHour ? (
                       <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-medium text-muted tabular-nums pb-1">
+                        <span className="text-[10px] font-semibold text-muted tabular-nums pb-1">
                           {formatTimeShort(time)}
                         </span>
-                        <div className="w-px h-1.5 bg-slate-300 dark:bg-slate-600" />
+                        <div className="w-px h-2 bg-muted/30" />
                       </div>
                     ) : (
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] pb-1 invisible">.</span>
-                        <div className="w-px h-0.5 bg-slate-200 dark:bg-slate-700" />
+                        <div className="w-px h-1 bg-border dark:bg-border-dark" />
                       </div>
                     )}
                   </div>
                 );
               })}
-              {/* Now indicator on header */}
               {nowPos !== null && (
                 <div
                   className="absolute bottom-0 w-0.5 h-full bg-accent/60 z-10"
@@ -180,21 +176,21 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
             <div
               key={room.id}
               className={`flex group/row transition-colors ${
-                rowIdx < roomData.length - 1 ? "border-b border-slate-100 dark:border-slate-800" : ""
-              } ${hoveredRoom === room.id ? "bg-slate-50/80 dark:bg-slate-800/40" : "hover:bg-slate-50/40 dark:hover:bg-slate-800/20"}`}
+                rowIdx < roomData.length - 1 ? "border-b border-border/50 dark:border-border-dark/50" : ""
+              } ${hoveredRoom === room.id ? "bg-surface/60 dark:bg-surface-dark/40" : "hover:bg-surface/30 dark:hover:bg-surface-dark/20"}`}
             >
               {/* Room label */}
               <Link
                 href={`/room/${room.id}?date=${date}`}
-                className="shrink-0 w-48 min-w-[192px] px-4 py-3 border-r border-slate-200 dark:border-slate-700 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer flex flex-col justify-center"
+                className="shrink-0 w-48 min-w-[192px] px-4 py-3 border-r border-border dark:border-border-dark hover:bg-surface/80 dark:hover:bg-surface-dark/60 transition-colors cursor-pointer flex flex-col justify-center"
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-foreground truncate leading-tight">{room.name}</p>
                   {future > 0 && (
                     <span className={`text-[10px] font-bold tabular-nums shrink-0 px-1.5 py-0.5 rounded-full ${
                       bookable > 0
-                        ? "bg-available/15 text-available"
-                        : "bg-booked/10 text-booked"
+                        ? "bg-available/10 text-available"
+                        : "bg-booked/8 text-booked"
                     }`}>
                       {bookable}/{future}
                     </span>
@@ -206,7 +202,7 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
               </Link>
 
               {/* Slot cells */}
-              <div className="flex-1 flex items-stretch relative py-1 px-0.5 min-w-0">
+              <div className="flex-1 flex items-stretch relative py-1 min-w-0">
                 {roomSlots.map(({ time, state, slot }, idx) => {
                   const prev = idx > 0 ? roomSlots[idx - 1] : null;
                   const next = idx < roomSlots.length - 1 ? roomSlots[idx + 1] : null;
@@ -217,37 +213,34 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                   const isEnd = state !== nextState;
 
                   let rounded = "";
-                  if (isStart && isEnd) rounded = "rounded-md";
-                  else if (isStart) rounded = "rounded-l-md";
-                  else if (isEnd) rounded = "rounded-r-md";
+                  if (isStart && isEnd) rounded = "rounded-lg";
+                  else if (isStart) rounded = "rounded-l-lg";
+                  else if (isEnd) rounded = "rounded-r-lg";
 
                   const isHovered = hoveredRoom === room.id && hoveredSlotIdx === idx;
                   const isRowHovered = hoveredRoom === room.id;
 
                   let bg: string;
                   if (state === "past") {
-                    bg = "bg-slate-100/80 dark:bg-slate-800/40";
+                    bg = "bg-surface/60 dark:bg-surface-dark/30";
                   } else if (state === "available") {
                     bg = isHovered
-                      ? "bg-available/40 ring-2 ring-available/50 ring-inset"
+                      ? "bg-available/35 ring-2 ring-available/40 ring-inset"
                       : isRowHovered
-                        ? "bg-available/25"
-                        : "bg-available/15";
+                        ? "bg-available/22"
+                        : "bg-available/12";
                   } else {
                     bg = isHovered
-                      ? "bg-booked/25 ring-2 ring-booked/40 ring-inset"
+                      ? "bg-booked/20 ring-2 ring-booked/30 ring-inset"
                       : isRowHovered
-                        ? "bg-booked/15"
-                        : "bg-booked/8";
+                        ? "bg-booked/12"
+                        : "bg-booked/6";
                   }
-
-                  // Gap between different state blocks
-                  const gap = isStart && idx > 0 ? "ml-[2px]" : "";
 
                   const cellProps = {
                     className: `flex-1 min-w-[18px] h-9 ${bg} ${rounded} transition-all duration-100 relative ${
                       state === "available" ? "cursor-pointer" : ""
-                    } ${gap}`,
+                    }`,
                     onMouseEnter: () => { setHoveredRoom(room.id); setHoveredSlotIdx(idx); },
                     onMouseLeave: () => { setHoveredRoom(null); setHoveredSlotIdx(null); },
                   };
@@ -267,7 +260,6 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                   return <div key={time} {...cellProps} />;
                 })}
 
-                {/* Now indicator line */}
                 {nowPos !== null && (
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-accent z-10 pointer-events-none"
@@ -281,53 +273,53 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
           ))}
         </div>
 
-        {/* Hover detail strip — fixed height, no layout shift */}
-        <div className="h-10 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center px-4 overflow-hidden">
+        {/* Hover detail strip */}
+        <div className="h-11 border-t border-border dark:border-border-dark bg-surface dark:bg-surface-dark flex items-center justify-center px-4 overflow-hidden">
           {hoveredInfo ? (
-            <div className="flex items-center gap-2.5 animate-in fade-in duration-100">
+            <div className="flex items-center gap-3 animate-in fade-in duration-100">
               <span className={`w-2 h-2 rounded-full shrink-0 ${
                 hoveredInfo.state === "available" ? "bg-available" :
-                hoveredInfo.state === "booked" ? "bg-booked" : "bg-slate-400"
+                hoveredInfo.state === "booked" ? "bg-booked" : "bg-muted/40"
               }`} />
               <span className="text-sm font-semibold text-foreground truncate">{hoveredInfo.room.name}</span>
               {hoveredInfo.slot && (
-                <span className="text-sm text-muted hidden sm:inline">
+                <span className="text-sm text-muted hidden sm:inline tabular-nums">
                   {formatTimeFull(hoveredInfo.slot.start)} – {formatTimeFull(hoveredInfo.slot.end)}
                 </span>
               )}
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
                 hoveredInfo.state === "available"
-                  ? "bg-available/15 text-available"
+                  ? "bg-available/10 text-available"
                   : hoveredInfo.state === "booked"
-                    ? "bg-booked/15 text-booked"
-                    : "bg-slate-200 dark:bg-slate-700 text-muted"
+                    ? "bg-booked/10 text-booked"
+                    : "bg-surface dark:bg-surface-dark text-muted border border-border dark:border-border-dark"
               }`}>
                 {hoveredInfo.state === "available" ? "Click to book" : hoveredInfo.state === "booked" ? "Booked" : "Past"}
               </span>
             </div>
           ) : (
-            <span className="text-[11px] text-muted">Hover over a time slot for details</span>
+            <span className="text-[11px] text-muted/50">Hover over a time slot for details</span>
           )}
         </div>
 
         {/* Legend footer */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-available/15 border border-available/30" />
-            <span className="text-[10px] text-muted">Available</span>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-4 py-2.5 border-t border-border/50 dark:border-border-dark/50 bg-surface/30 dark:bg-surface-dark/20">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-3 rounded-md bg-available/12 border border-available/25" />
+            <span className="text-[10px] text-muted font-medium">Available</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-booked/10 border border-booked/20" />
-            <span className="text-[10px] text-muted">Booked</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-3 rounded-md bg-booked/8 border border-booked/15" />
+            <span className="text-[10px] text-muted font-medium">Booked</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" />
-            <span className="text-[10px] text-muted">Past</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-3 rounded-md bg-surface dark:bg-surface-dark border border-border dark:border-border-dark" />
+            <span className="text-[10px] text-muted font-medium">Past</span>
           </div>
           {nowPos !== null && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-accent rounded-full" />
-              <span className="text-[10px] text-muted">Now</span>
+              <span className="text-[10px] text-muted font-medium">Now</span>
             </div>
           )}
         </div>

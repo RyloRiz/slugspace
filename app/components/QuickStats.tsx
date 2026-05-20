@@ -49,28 +49,61 @@ export default function QuickStats({ slots, rooms, today, date }: QuickStatsProp
   const soonestRoom = soonest ? rooms.find((r) => r.id === soonest.itemId) : null;
 
   return (
-    <div className="flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
-      <div className="flex items-center gap-1.5">
-        <span className="font-bold text-available">{openRoomCount}</span>
-        <span className="text-muted">of {totalRooms} rooms open</span>
+    <div className="grid grid-cols-3 gap-4">
+      {/* Rooms Open */}
+      <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 sm:p-5">
+        <div className="flex items-baseline gap-1.5">
+          <span
+            className="text-2xl sm:text-3xl text-available tabular-nums"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {openRoomCount}
+          </span>
+          <span className="text-sm text-muted">/ {totalRooms}</span>
+        </div>
+        <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mt-1">Rooms Open</p>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="font-bold text-foreground">{availPct}%</span>
-        <span className="text-muted">available</span>
-        <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-          <div className="h-full rounded-full bg-available transition-all" style={{ width: `${availPct}%` }} />
+
+      {/* Availability */}
+      <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 sm:p-5">
+        <div className="flex items-baseline gap-1">
+          <span
+            className="text-2xl sm:text-3xl text-foreground tabular-nums"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {availPct}
+          </span>
+          <span className="text-sm text-muted">%</span>
+        </div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">Available</p>
+          <div className="flex-1 h-1.5 rounded-full bg-surface dark:bg-surface-dark overflow-hidden max-w-20">
+            <div className="h-full rounded-full bg-available transition-all duration-500" style={{ width: `${availPct}%` }} />
+          </div>
         </div>
       </div>
-      {soonestRoom && soonest && (
-        <Link
-          href={`/room/${soonestRoom.id}?date=${date}`}
-          className="flex items-center gap-1.5 text-primary hover:underline cursor-pointer"
-        >
-          <span className="text-muted">Next opening:</span>
-          <span className="font-semibold">{formatTimeShort(soonest.start)}</span>
-          <span className="text-muted hidden sm:inline">({soonestRoom.name})</span>
-        </Link>
-      )}
+
+      {/* Next Opening */}
+      <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 sm:p-5">
+        {soonestRoom && soonest ? (
+          <Link href={`/room/${soonestRoom.id}?date=${date}`} className="block cursor-pointer group">
+            <span
+              className="text-2xl sm:text-3xl text-primary-light group-hover:text-primary transition-colors tabular-nums"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {formatTimeShort(soonest.start)}
+            </span>
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mt-1 truncate">
+              Next opening
+            </p>
+          </Link>
+        ) : (
+          <>
+            <span className="text-2xl sm:text-3xl text-muted/30" style={{ fontFamily: "var(--font-display)" }}>—</span>
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mt-1">No openings</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

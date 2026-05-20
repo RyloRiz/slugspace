@@ -426,6 +426,97 @@ export function getUpcomingDates(startDate: string, days: number): string[] {
   return dates;
 }
 
+// ── Cram Session (single-day) ──
+
+export interface CramPreferences {
+  date: string;
+  sessionDuration: number;
+  groupSize: number;
+  locationPreference: "any" | number;
+}
+
+/**
+ * Find all bookable blocks for a single day, scored and sorted.
+ * Unlike generateSchedule, this returns ALL candidates (not just top-N).
+ */
+export function generateCramOptions(
+  prefs: CramPreferences,
+  dayAvailability: DayAvailability,
+  rooms: Room[],
+  favoriteRoomIds: number[]
+): CandidateBlock[] {
+  const cappedDuration = Math.min(prefs.sessionDuration, 240);
+
+  const eligibleRooms = rooms.filter((r) => {
+    if (prefs.locationPreference !== "any" && r.locationId !== prefs.locationPreference) return false;
+    if (r.capacity < prefs.groupSize) return false;
+    return true;
+  });
+
+  const eligibleRoomIds = new Set(eligibleRooms.map((r) => r.id));
+  const roomMap = new Map(rooms.map((r) => [r.id, r]));
+
+  // Group slots by room
+  const byRoom = new Map<number, SlotInfo[]>();
+  for (const s of dayAvailability.slots) {
+    if (!eligibleRoomIds.has(s.itemId)) continue;
+    const arr = byRoom.get(s.itemId) || [];
+    arr.push(s);
+    byRoom.set(s.itemId, arr);
+  }
+
+  const candidates: CandidateBlock[] = [];
+
+  for (const [roomId, roomSlots] of byRoom) {
+    const room = roomMap.get(roomId);
+    if (!room) continue;
+
+    const blocks = findConsecutiveBlocks(roomSlots, room, dayAvailability.date, cappedDuration);
+
+    for (const block of blocks) {
+      const startHour = parseHour(block.startTime);
+      const endHour = parseHour(block.endTime);
+
+      const timeMatch = 20; // no time preference for cram — neutral score
+      const capacityFit = scoreCapacityFit(room.capacity, prefs.groupSize);
+      const roomPreference = scoreRoomPreference(room.id, favoriteRoomIds);
+      const dayMatch = 15; // single day, always matches
+      const durationFit = scoreDurationFit(block.durationMins, cappedDuration);
+
+      const breakdown: ScoreBreakdown = {
+        timeMatch,
+        capacityFit,
+        roomPreference,
+        dayMatch,
+        durationFit,
+      };
+
+      candidates.push({
+        date: dayAvailability.date,
+        room,
+        startTime: block.startTime,
+        endTime: block.endTime,
+        durationMins: block.durationMins,
+        slots: block.slots,
+        score: timeMatch + capacityFit + roomPreference + dayMatch + durationFit,
+        scoreBreakdown: breakdown,
+      });
+    }
+  }
+
+  // Sort by score desc, then by start time
+  candidates.sort((a, b) => b.score - a.score || a.startTime.localeCompare(b.startTime));
+
+  // Deduplicate: for each room, keep only the top-scoring block per start time
+  const seen = new Set<string>();
+  return candidates.filter((c) => {
+    const key = `${c.room.id}-${c.startTime}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** Default preferences for a new planner session */
 export function defaultPreferences(): StudyPreferences {
   return {

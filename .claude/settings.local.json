@@ -10,7 +10,8 @@
       "Bash(pnpm dev:*)",
       "Bash(curl -s http://localhost:3000)",
       "Bash(python3 -c \" import json, sys data = json.loads\\(sys.stdin.read\\(\\)\\) slots = data.get\\('slots', []\\) print\\(f'Slots returned for June 15: {len\\(slots\\)}'\\) if slots: print\\('First slot:', json.dumps\\(slots[0]\\)\\) \")",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebFetch(domain:communications.ucsc.edu)"
     ]
   }
 }
