@@ -339,24 +339,38 @@ export default function StudyPlanner() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-surface/80 dark:bg-surface-dark/80 border-b border-border dark:border-border-dark">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link
-                href="/"
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-border dark:border-border-dark text-muted hover:text-foreground hover:bg-surface dark:hover:bg-surface-dark transition-colors cursor-pointer shrink-0"
-                aria-label="Back to dashboard"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                </svg>
-              </Link>
-              <h1 className="text-lg font-bold text-foreground leading-tight">Study Planner</h1>
-            </div>
+      {/* ── HERO / HEADER ── */}
+      <div className="relative overflow-hidden">
+        {/* Background imagery */}
+        <div className="absolute inset-0">
+          <Image
+            src="/libraries/mchenry-hero.png"
+            alt=""
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/75 to-background" />
+          {/* Decorative grid lines */}
+          <div className="absolute inset-0 opacity-[0.04]" style={{
+            backgroundImage: "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }} />
+        </div>
 
-            {/* Step indicator dots — wizard only */}
+        {/* Nav bar */}
+        <div className="relative z-10 max-w-2xl mx-auto px-4 pt-4 pb-2">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/"
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm text-white/80 hover:text-white hover:bg-white/20 transition-all cursor-pointer shrink-0"
+              aria-label="Back to dashboard"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </Link>
+
             {phase === "wizard" && (
               <div className="flex items-center gap-1.5">
                 {[1, 2, 3].map((s) => (
@@ -365,10 +379,10 @@ export default function StudyPlanner() {
                     onClick={() => goTo(s as WizardStep)}
                     className={`transition-all duration-300 rounded-full cursor-pointer ${
                       s === wizStep
-                        ? "w-6 h-2 bg-primary dark:bg-secondary"
+                        ? "w-6 h-2 bg-accent"
                         : s < wizStep
-                          ? "w-2 h-2 bg-primary/40 dark:bg-secondary/40"
-                          : "w-2 h-2 bg-slate-300 dark:bg-slate-600"
+                          ? "w-2 h-2 bg-white/50"
+                          : "w-2 h-2 bg-white/20"
                     }`}
                     aria-label={`Go to step ${s}`}
                   />
@@ -379,7 +393,7 @@ export default function StudyPlanner() {
             {phase === "results" && (
               <button
                 onClick={() => { setPhase("wizard"); setWizStep(1); }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border dark:border-border-dark text-muted hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 backdrop-blur-sm text-white/80 hover:text-white hover:bg-white/20 transition-all cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
@@ -389,9 +403,53 @@ export default function StudyPlanner() {
             )}
           </div>
         </div>
-      </header>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 flex flex-col">
+        {/* Hero content */}
+        <div className="relative z-10 max-w-2xl mx-auto px-4 pt-6 pb-10 sm:pt-10 sm:pb-14">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-accent/90 flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
+              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+              </svg>
+            </div>
+            <div>
+              <h1
+                className="text-2xl sm:text-3xl text-white leading-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Study Planner
+              </h1>
+              <p className="text-sm text-white/60 mt-1 max-w-md">
+                {phase === "wizard"
+                  ? "Tell us your study habits and we'll find the perfect rooms and times across campus."
+                  : phase === "loading"
+                    ? "Scanning real-time availability across both libraries..."
+                    : `Found ${result?.blocks.length || 0} sessions for your schedule.`}
+              </p>
+            </div>
+          </div>
+
+          {/* Feature pills */}
+          {phase === "wizard" && wizStep === 1 && (
+            <div className="flex flex-wrap gap-2 mt-6">
+              {[
+                { icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z", text: "Real-time availability" },
+                { icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z", text: "Smart matching" },
+                { icon: "M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008z", text: "Both libraries" },
+              ].map(({ icon, text }) => (
+                <span key={text} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white/70 text-[11px] font-medium">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                  </svg>
+                  {text}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 flex flex-col -mt-3">
         {error && (
           <div className="rounded-xl border border-booked/30 bg-booked/5 p-4 text-sm text-booked flex items-start gap-3 mb-5" role="alert">
             <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -973,47 +1031,73 @@ export default function StudyPlanner() {
 
         {/* ── LOADING ── */}
         {phase === "loading" && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-6 max-w-xs">
-              {/* Animated rings */}
-              <div className="relative w-20 h-20 mx-auto">
-                <div className="absolute inset-0 border-[3px] border-primary/10 dark:border-secondary/10 rounded-full" />
-                <div className="absolute inset-0 border-[3px] border-transparent border-t-primary dark:border-t-secondary rounded-full animate-spin" />
-                <div className="absolute inset-2 border-[2px] border-transparent border-b-accent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary dark:text-secondary tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
-                    {progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}
-                  </span>
-                </div>
+          <div className="flex-1 flex items-center justify-center py-8">
+            <div className="w-full max-w-sm">
+              {/* Library preview cards */}
+              <div className="relative h-36 mb-8 flex items-center justify-center">
+                <motion.div
+                  initial={{ opacity: 0, rotate: -6, y: 10 }}
+                  animate={{ opacity: 1, rotate: -6, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="absolute w-44 h-28 rounded-2xl overflow-hidden shadow-xl shadow-black/15 border-2 border-white/30 dark:border-white/10 -left-2"
+                >
+                  <Image src="/libraries/se-hero.png" alt="S&E Library" fill className="object-cover" />
+                  <div className="absolute inset-0 bg-primary/30" />
+                  <span className="absolute bottom-2 left-3 text-[10px] font-bold text-white/90 drop-shadow-lg">S&E Library</span>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, rotate: 4, y: 10 }}
+                  animate={{ opacity: 1, rotate: 4, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="absolute w-44 h-28 rounded-2xl overflow-hidden shadow-xl shadow-black/15 border-2 border-white/30 dark:border-white/10 -right-2"
+                >
+                  <Image src="/libraries/mchenry-hero.png" alt="McHenry Library" fill className="object-cover" />
+                  <div className="absolute inset-0 bg-primary/30" />
+                  <span className="absolute bottom-2 left-3 text-[10px] font-bold text-white/90 drop-shadow-lg">McHenry Library</span>
+                </motion.div>
               </div>
 
-              <div>
-                <p className="text-base font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
-                  Scanning availability
-                </p>
-                <p className="text-xs text-muted mt-1.5">
-                  Checking {progress.total} {progress.total === 1 ? "day" : "days"} across all rooms
-                </p>
-              </div>
-
-              {progress.total > 0 && (
-                <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(progress.current / progress.total) * 100}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
+              <div className="text-center space-y-5">
+                {/* Animated rings */}
+                <div className="relative w-20 h-20 mx-auto">
+                  <div className="absolute inset-0 border-[3px] border-primary/10 dark:border-secondary/10 rounded-full" />
+                  <div className="absolute inset-0 border-[3px] border-transparent border-t-primary dark:border-t-secondary rounded-full animate-spin" />
+                  <div className="absolute inset-2 border-[2px] border-transparent border-b-accent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-primary dark:text-secondary tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
+                      {progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}
+                    </span>
+                  </div>
                 </div>
-              )}
 
-              {/* Summary of what we're looking for */}
-              <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                {summaryChips.slice(0, 4).map((chip, i) => (
-                  <span key={i} className="inline-flex px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-muted">
-                    {chip.label}
-                  </span>
-                ))}
+                <div>
+                  <p className="text-base font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+                    Scanning availability
+                  </p>
+                  <p className="text-xs text-muted mt-1.5">
+                    Checking {progress.total} {progress.total === 1 ? "day" : "days"} across all rooms
+                  </p>
+                </div>
+
+                {progress.total > 0 && (
+                  <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(progress.current / progress.total) * 100}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                )}
+
+                {/* Summary of what we're looking for */}
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  {summaryChips.slice(0, 4).map((chip, i) => (
+                    <span key={i} className="inline-flex px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-muted">
+                      {chip.label}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1120,9 +1204,24 @@ export default function StudyPlanner() {
         )}
       </main>
 
-      <footer className="border-t border-border dark:border-border-dark py-4 mt-auto">
-        <div className="max-w-2xl mx-auto px-4 text-xs text-muted text-center">
-          Recommendations are based on real-time availability. Book quickly — slots fill up fast.
+      <footer className="border-t border-border dark:border-border-dark py-5 mt-auto">
+        <div className="max-w-2xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Image src="/ucscbooking.png" alt="" width={20} height={20} className="w-5 h-5 rounded-md opacity-40" />
+            <span className="text-[11px] text-muted">
+              Recommendations based on real-time availability. Book quickly — slots fill up fast.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {[
+              { src: "/libraries/se-hero.png", alt: "S&E Library" },
+              { src: "/libraries/mchenry-hero.png", alt: "McHenry Library" },
+            ].map(({ src, alt }) => (
+              <div key={alt} className="w-8 h-8 rounded-lg overflow-hidden relative opacity-30 hover:opacity-60 transition-opacity">
+                <Image src={src} alt={alt} fill className="object-cover" />
+              </div>
+            ))}
+          </div>
         </div>
       </footer>
     </div>
@@ -1134,30 +1233,61 @@ export default function StudyPlanner() {
 function ResultCard({ block, index }: { block: CandidateBlock; index: number }) {
   const matchPct = Math.round(block.score);
   const loc = LOCATIONS.find((l) => l.id === block.room.locationId);
+  const libImage = LIBRARY_IMAGES[block.room.locationId];
 
   return (
     <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark overflow-hidden group">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50 dark:border-border-dark/50">
-        <div className="flex items-center gap-3">
-          <span
-            className="w-8 h-8 rounded-xl bg-primary/10 dark:bg-secondary/10 text-primary dark:text-secondary text-sm font-bold flex items-center justify-center"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {index + 1}
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{formatDateShort(block.date)}</p>
-            <p className="text-[11px] text-muted">{DAY_NAMES_FULL[new Date(block.date + "T12:00:00").getDay()]}</p>
+      {/* Library image banner */}
+      {libImage && (
+        <div className="relative h-16 overflow-hidden">
+          <Image src={libImage} alt="" fill className="object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/70 to-primary/40" />
+          <div className="absolute inset-0 flex items-center justify-between px-5">
+            <div className="flex items-center gap-2.5">
+              <span
+                className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-sm text-white text-xs font-bold flex items-center justify-center"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {index + 1}
+              </span>
+              <div>
+                <p className="text-xs font-semibold text-white">{formatDateShort(block.date)}</p>
+                <p className="text-[10px] text-white/60">{DAY_NAMES_FULL[new Date(block.date + "T12:00:00").getDay()]}</p>
+              </div>
+            </div>
+            <div className={`text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm ${
+              matchPct >= 70 ? "bg-available/20 text-white" :
+              matchPct >= 45 ? "bg-accent/30 text-white" :
+              "bg-white/15 text-white/80"
+            }`}>
+              {matchPct}% match
+            </div>
           </div>
         </div>
-        <div className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-          matchPct >= 70 ? "bg-available/10 text-available" :
-          matchPct >= 45 ? "bg-accent/10 text-accent" :
-          "bg-slate-100 dark:bg-slate-800 text-muted"
-        }`}>
-          {matchPct}% match
+      )}
+      {!libImage && (
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50 dark:border-border-dark/50">
+          <div className="flex items-center gap-3">
+            <span
+              className="w-8 h-8 rounded-xl bg-primary/10 dark:bg-secondary/10 text-primary dark:text-secondary text-sm font-bold flex items-center justify-center"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {index + 1}
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{formatDateShort(block.date)}</p>
+              <p className="text-[11px] text-muted">{DAY_NAMES_FULL[new Date(block.date + "T12:00:00").getDay()]}</p>
+            </div>
+          </div>
+          <div className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+            matchPct >= 70 ? "bg-available/10 text-available" :
+            matchPct >= 45 ? "bg-accent/10 text-accent" :
+            "bg-slate-100 dark:bg-slate-800 text-muted"
+          }`}>
+            {matchPct}% match
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="px-5 py-4 space-y-3">
         <div>
