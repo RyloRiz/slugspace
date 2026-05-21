@@ -7,6 +7,7 @@ import { Room, LOCATIONS } from "../../lib/rooms";
 import { bookingUrl, homePageUrl } from "../../lib/booking-url";
 import { useFavorites } from "../../lib/favorites";
 import { isSlotAvailable, isSlotFuture } from "../../lib/slots";
+import { getRoomTrend, formatTrendHour, formatDayName, trendLabel } from "../../lib/trends";
 import { SlotData } from "../../components/TimeGrid";
 
 const LIBRARY_IMAGES: Record<number, { hero: string; alt: string }> = {
@@ -192,14 +193,14 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
             <Link href="/" className="flex items-center gap-3 shrink-0 group cursor-pointer">
               <Image
                 src="/ucscbooking.png"
-                alt="UCSC Room Booker"
+                alt="SlugSpace"
                 width={32}
                 height={32}
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shrink-0 group-hover:scale-105 transition-transform"
               />
               <div className="hidden sm:block">
                 <p className="text-sm font-normal text-white/90 leading-tight" style={{ fontFamily: "var(--font-display)" }}>
-                  Room Booker
+                  SlugSpace
                 </p>
                 <p className="text-[9px] text-white/40 tracking-widest uppercase">UC Santa Cruz</p>
               </div>
@@ -596,6 +597,123 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                 <p className="text-xs text-muted">All slots are booked or have passed. Try another date.</p>
               </div>
             )}
+
+            {/* Availability Trends */}
+            {(() => {
+              const trend = getRoomTrend(room.id);
+              if (!trend) return null;
+              return (
+                <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-bold text-muted uppercase tracking-wider">Availability Trends</h2>
+                    <span className="text-[10px] text-muted">{trend.sampleCount} data points</span>
+                  </div>
+
+                  {/* Overall rate */}
+                  <div className="flex items-center gap-3">
+                    <div className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                      trend.overallRate >= 0.6 ? "bg-available/8 text-available" :
+                      trend.overallRate >= 0.3 ? "bg-accent/8 text-accent" :
+                      "bg-booked/8 text-booked"
+                    }`}>
+                      {trendLabel(trend.overallRate)}
+                    </div>
+                    <span className="text-xs text-muted">
+                      {Math.round(trend.overallRate * 100)}% overall availability
+                    </span>
+                  </div>
+
+                  {/* Heatmap grid */}
+                  <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+                    <div className="min-w-[420px]">
+                      {/* Hour labels */}
+                      <div className="flex mb-1 pl-10">
+                        {[8, 10, 12, 14, 16, 18, 20, 22].map((h) => (
+                          <span
+                            key={h}
+                            className="text-[9px] text-muted font-medium tabular-nums"
+                            style={{ width: `${(2 / 14) * 100}%`, minWidth: 0 }}
+                          >
+                            {formatTrendHour(h)}
+                          </span>
+                        ))}
+                      </div>
+                      {/* Rows: one per day */}
+                      {[1, 2, 3, 4, 5, 6, 0].map((dow) => (
+                        <div key={dow} className="flex items-center gap-1 mb-0.5">
+                          <span className="w-9 text-[10px] text-muted font-medium shrink-0 text-right pr-1">
+                            {formatDayName(dow)}
+                          </span>
+                          <div className="flex flex-1 gap-px">
+                            {Array.from({ length: 14 }, (_, i) => i + 8).map((hour) => {
+                              const rate = trend.heatmap[dow][hour];
+                              let bg: string;
+                              if (rate === null) {
+                                bg = "bg-surface dark:bg-surface-dark";
+                              } else if (rate >= 0.8) {
+                                bg = "bg-available/60";
+                              } else if (rate >= 0.6) {
+                                bg = "bg-available/35";
+                              } else if (rate >= 0.4) {
+                                bg = "bg-accent/30";
+                              } else if (rate >= 0.2) {
+                                bg = "bg-booked/25";
+                              } else {
+                                bg = "bg-booked/40";
+                              }
+                              return (
+                                <div
+                                  key={hour}
+                                  className={`flex-1 h-5 rounded-sm ${bg} transition-colors`}
+                                  title={rate !== null
+                                    ? `${formatDayName(dow)} ${formatTrendHour(hour)}: ${Math.round(rate * 100)}% available`
+                                    : `${formatDayName(dow)} ${formatTrendHour(hour)}: No data`
+                                  }
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      {/* Legend */}
+                      <div className="flex items-center gap-2 mt-2.5 pl-10">
+                        <span className="text-[9px] text-muted">Busy</span>
+                        <div className="flex gap-px">
+                          <div className="w-4 h-2.5 rounded-sm bg-booked/40" />
+                          <div className="w-4 h-2.5 rounded-sm bg-booked/25" />
+                          <div className="w-4 h-2.5 rounded-sm bg-accent/30" />
+                          <div className="w-4 h-2.5 rounded-sm bg-available/35" />
+                          <div className="w-4 h-2.5 rounded-sm bg-available/60" />
+                        </div>
+                        <span className="text-[9px] text-muted">Free</span>
+                        <div className="w-4 h-2.5 rounded-sm bg-surface dark:bg-surface-dark border border-border/30 dark:border-border-dark/30 ml-2" />
+                        <span className="text-[9px] text-muted">No data</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Best slots */}
+                  {trend.bestSlots.length > 0 && (
+                    <div className="pt-3 border-t border-border dark:border-border-dark">
+                      <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">Best Times</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {trend.bestSlots.map((s, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-available/6 text-available text-[11px] font-semibold"
+                          >
+                            {formatDayName(s.dow)} {formatTrendHour(s.hour)}
+                            <span className="text-available/60 font-normal">
+                              {Math.round(s.rate * 100)}%
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Full schedule */}
             <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark overflow-hidden">

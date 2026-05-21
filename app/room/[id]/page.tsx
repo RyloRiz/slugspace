@@ -13,7 +13,7 @@ export async function generateMetadata({
   const { id } = await params;
   const room = getRoomById(Number(id));
   return {
-    title: room ? `${room.name} - UCSC Room Booker` : "Room Not Found",
+    title: room ? `${room.name} - SlugSpace` : "Room Not Found",
   };
 }
 

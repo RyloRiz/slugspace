@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import StudyPlanner from "./StudyPlanner";
 
 export const metadata: Metadata = {
-  title: "Study Planner - UCSC Room Booker",
+  title: "Study Planner - SlugSpace",
   description: "Plan your weekly study schedule with optimal room bookings",
 };
 

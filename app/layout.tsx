@@ -15,7 +15,7 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: "UCSC Room Booker",
+  title: "SlugSpace",
   description: "Find and book study rooms at UC Santa Cruz libraries",
 };
 

@@ -7,10 +7,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { LOCATIONS, ROOMS, getFloorsForSelection, getRoomsForSelection } from "../lib/rooms";
 import { homePageUrl } from "../lib/booking-url";
 import { useFavorites } from "../lib/favorites";
+import { checkAlerts } from "../lib/alerts";
+import { recordAvailability } from "../lib/trends";
 import QuickStats from "./QuickStats";
 import RoomCards from "./RoomCards";
 import TimeGrid, { SlotData } from "./TimeGrid";
 import CramSession from "./CramSession";
+import AlertPanel from "./AlertPanel";
+import BookingQueue from "./BookingQueue";
 
 type ViewMode = "cards" | "grid";
 type SortMode = "availability" | "name" | "capacity";
@@ -161,8 +165,13 @@ export default function BookingDashboard() {
       );
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setSlots(data.slots || []);
+      const newSlots = data.slots || [];
+      setSlots(newSlots);
       setLastRefresh(new Date());
+      // Check slot watch alerts against fresh data
+      checkAlerts(newSlots);
+      // Record availability data for trend analysis
+      recordAvailability(newSlots);
     } catch {
       if (!silent) setError("Failed to load availability. Please try again.");
     } finally {
@@ -210,14 +219,14 @@ export default function BookingDashboard() {
             <Link href="/" className="flex items-center gap-3 shrink-0 group cursor-pointer">
               <Image
                 src="/ucscbooking.png"
-                alt="UCSC Room Booker"
+                alt="SlugSpace"
                 width={36}
                 height={36}
                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shrink-0 group-hover:scale-105 transition-transform"
               />
               <div className="hidden sm:block">
                 <h1 className="text-lg font-normal text-white leading-tight" style={{ fontFamily: "var(--font-display)" }}>
-                  Room Booker
+                  SlugSpace
                 </h1>
                 <p className="text-[10px] text-white/50 tracking-widest uppercase">UC Santa Cruz</p>
               </div>
@@ -241,7 +250,7 @@ export default function BookingDashboard() {
             </nav>
 
             {/* Right actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {lastRefresh && (
                 <span className="text-[10px] text-white/40 hidden lg:block tabular-nums">
                   {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -249,7 +258,7 @@ export default function BookingDashboard() {
               )}
               <Link
                 href="/planner"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-white/10 text-white hover:bg-white/15 transition-colors cursor-pointer backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white/10 text-white hover:bg-white/15 transition-colors cursor-pointer backdrop-blur-sm"
                 title="Study Planner"
               >
                 <svg className="w-3.5 h-3.5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -257,6 +266,7 @@ export default function BookingDashboard() {
                 </svg>
                 <span className="hidden sm:inline">Planner</span>
               </Link>
+              <AlertPanel />
               <button
                 onClick={() => fetchAvailability(date, locationId, groupId, true)}
                 className="p-2.5 rounded-xl hover:bg-white/10 transition-all cursor-pointer"
@@ -750,6 +760,9 @@ export default function BookingDashboard() {
           </Link>
         )}
       </main>
+
+      {/* Booking Queue FAB */}
+      <BookingQueue />
 
       {/* Footer */}
       <footer className="relative mt-auto overflow-hidden">
