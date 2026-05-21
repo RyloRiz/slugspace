@@ -97,6 +97,7 @@ export default function BookingDashboard() {
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { ids: favoriteIds } = useFavorites();
 
@@ -149,8 +150,9 @@ export default function BookingDashboard() {
     );
   };
 
-  const fetchAvailability = useCallback(async (dateStr: string, lid: number, gid: number) => {
-    setLoading(true);
+  const fetchAvailability = useCallback(async (dateStr: string, lid: number, gid: number, silent = false) => {
+    if (!silent) setLoading(true);
+    setRefreshing(true);
     setError(null);
     try {
       const end = tomorrowStr(dateStr);
@@ -162,9 +164,10 @@ export default function BookingDashboard() {
       setSlots(data.slots || []);
       setLastRefresh(new Date());
     } catch {
-      setError("Failed to load availability. Please try again.");
+      if (!silent) setError("Failed to load availability. Please try again.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -173,7 +176,7 @@ export default function BookingDashboard() {
   }, [date, locationId, groupId, fetchAvailability]);
 
   useEffect(() => {
-    const interval = setInterval(() => fetchAvailability(date, locationId, groupId), 120000);
+    const interval = setInterval(() => fetchAvailability(date, locationId, groupId, true), 120000);
     return () => clearInterval(interval);
   }, [date, locationId, groupId, fetchAvailability]);
 
@@ -253,11 +256,11 @@ export default function BookingDashboard() {
                 <span className="hidden sm:inline">Planner</span>
               </Link>
               <button
-                onClick={() => fetchAvailability(date, locationId, groupId)}
+                onClick={() => fetchAvailability(date, locationId, groupId, true)}
                 className="p-2.5 rounded-xl hover:bg-white/10 transition-all cursor-pointer"
                 title="Refresh"
               >
-                <svg className={`w-4 h-4 text-white/70 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg className={`w-4 h-4 text-white/70 transition-transform ${refreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.182" />
                 </svg>
               </button>
