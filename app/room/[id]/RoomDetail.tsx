@@ -190,11 +190,13 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
         <div className="max-w-4xl mx-auto px-5 py-3">
           <div className="flex items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-3 shrink-0 group cursor-pointer">
-              <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/15 transition-colors">
-                <svg className="w-4.5 h-4.5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.331 0 4.472.89 6.074 2.356M12 6.042a8.967 8.967 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.356" />
-                </svg>
-              </div>
+              <Image
+                src="/ucscbooking.png"
+                alt="UCSC Room Booker"
+                width={32}
+                height={32}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shrink-0 group-hover:scale-105 transition-transform"
+              />
               <div className="hidden sm:block">
                 <p className="text-sm font-normal text-white/90 leading-tight" style={{ fontFamily: "var(--font-display)" }}>
                   Room Booker
@@ -229,7 +231,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
       </header>
 
       {/* ── Hero Banner ── */}
-      <div className="relative h-56 sm:h-64 overflow-hidden">
+      <div className="relative h-44 sm:h-56 md:h-64 overflow-hidden">
         <Image
           src={libraryImg.hero}
           alt={libraryImg.alt}
@@ -242,31 +244,31 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
         <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
 
         <div className="absolute inset-0 flex items-end">
-          <div className="max-w-4xl w-full mx-auto px-5 pb-6">
+          <div className="max-w-4xl w-full mx-auto px-4 sm:px-5 pb-4 sm:pb-6">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-1.5 text-[10px] text-white/50 mb-3">
+            <div className="flex items-center gap-1.5 text-[10px] text-white/50 mb-2 sm:mb-3">
               <Link href="/" className="hover:text-white/80 transition-colors cursor-pointer">{location?.shortName}</Link>
               <span>/</span>
               <span>{group?.name}</span>
             </div>
 
             {/* Room name + status */}
-            <div className="flex items-end justify-between gap-4">
-              <div>
+            <div className="flex items-end justify-between gap-3 sm:gap-4">
+              <div className="min-w-0">
                 <h1
-                  className="text-3xl sm:text-4xl text-white leading-none drop-shadow-sm"
+                  className="text-2xl sm:text-3xl md:text-4xl text-white leading-none drop-shadow-sm truncate"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   {room.name}
                 </h1>
-                <div className="flex items-center gap-3 mt-2.5">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm text-xs font-medium text-white/80">
+                <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-2.5 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm text-[11px] sm:text-xs font-medium text-white/80">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                     </svg>
                     {room.capacity} {room.capacity === 1 ? "person" : "seats"}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm text-xs font-medium text-white/80">
+                  <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm text-[11px] sm:text-xs font-medium text-white/80">
                     {room.floor} floor
                   </span>
                   {room.features.map((f) => (
@@ -279,13 +281,13 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
 
               {/* Status badge */}
               {!loading && slots.length > 0 && (
-                <div className={`shrink-0 px-4 py-2 rounded-xl backdrop-blur-sm text-sm font-bold ${
+                <div className={`shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl backdrop-blur-sm text-xs sm:text-sm font-bold ${
                   isOpen
                     ? "bg-available/20 text-available border border-available/30"
                     : "bg-booked/20 text-booked border border-booked/30"
                 }`}>
                   {isOpen ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 sm:gap-2">
                       <span className="w-2 h-2 rounded-full bg-available animate-pulse" />
                       {bookableSlots.length} open
                     </span>
@@ -297,14 +299,14 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
         </div>
       </div>
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-5 py-8 space-y-6">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-5 py-6 sm:py-8 space-y-6">
         {/* ── Date Navigation ── */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               onClick={goPrev}
               disabled={!canGoPrev}
-              className={`p-2.5 rounded-xl transition-all ${
+              className={`p-2 sm:p-2.5 rounded-xl transition-all ${
                 canGoPrev
                   ? "hover:bg-surface dark:hover:bg-surface-dark cursor-pointer text-foreground border border-border dark:border-border-dark"
                   : "opacity-20 cursor-not-allowed"
@@ -314,7 +316,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
               </svg>
             </button>
-            <div className="text-center min-w-[200px]">
+            <div className="text-center flex-1 sm:flex-none sm:min-w-[200px]">
               <input
                 ref={dateInputRef}
                 type="date"
@@ -334,7 +336,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                   {isToday ? "Today" : "Viewing"}
                 </p>
                 <p
-                  className="text-lg font-semibold text-foreground group-hover:text-primary dark:group-hover:text-secondary transition-colors"
+                  className="text-base sm:text-lg font-semibold text-foreground group-hover:text-primary dark:group-hover:text-secondary transition-colors"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   {formatDateDisplay(date)}
@@ -343,18 +345,18 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
             </div>
             <button
               onClick={goNext}
-              className="p-2.5 rounded-xl hover:bg-surface dark:hover:bg-surface-dark border border-border dark:border-border-dark transition-all cursor-pointer text-foreground"
+              className="p-2 sm:p-2.5 rounded-xl hover:bg-surface dark:hover:bg-surface-dark border border-border dark:border-border-dark transition-all cursor-pointer text-foreground"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-center sm:justify-end">
             {!isToday && (
               <button
                 onClick={() => setDate(today)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-card bg-primary hover:bg-primary/90 shadow-sm transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-card bg-primary hover:bg-primary/90 shadow-sm transition-all cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
@@ -366,7 +368,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
               href={bookingUrl(room.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-primary dark:text-secondary bg-primary/5 hover:bg-primary/10 border border-primary/15 dark:border-secondary/15 hover:border-primary/25 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs font-semibold text-primary dark:text-secondary bg-primary/5 hover:bg-primary/10 border border-primary/15 dark:border-secondary/15 hover:border-primary/25 transition-all cursor-pointer"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
@@ -428,7 +430,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
         {!loading && slots.length > 0 && (
           <div className="space-y-6">
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 text-center">
                 <p className="text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
                   {bookableSlots.length}
@@ -451,9 +453,9 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
 
             {/* Timeline card */}
             <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-muted uppercase tracking-wider">Day Overview</h2>
-                <div className="flex items-center gap-4 text-[10px] text-muted">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Day Overview</h2>
+                <div className="flex items-center gap-2 sm:gap-4 text-[10px] text-muted flex-wrap justify-end">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded bg-available/20 border border-available/40" />
                     Open
@@ -547,20 +549,20 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                         href={bookingUrl(room.id, { start: block.start, end: bookEnd, roomName: room.name })}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between px-5 py-4 rounded-2xl bg-card dark:bg-card-dark border border-available/15 hover:border-available/40 hover:shadow-lg hover:shadow-available/5 transition-all cursor-pointer group"
+                        className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-card dark:bg-card-dark border border-available/15 hover:border-available/40 hover:shadow-lg hover:shadow-available/5 transition-all cursor-pointer group"
                       >
-                        <div>
-                          <div className="text-base font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+                        <div className="min-w-0">
+                          <div className="text-sm sm:text-base font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
                             {formatTime(block.start)} – {formatTime(block.end)}
                           </div>
-                          <div className="text-xs text-muted mt-0.5">
+                          <div className="text-[11px] sm:text-xs text-muted mt-0.5">
                             {formatDuration(block.durationMins)} window
                             {capped && (
                               <span className="text-accent font-semibold"> · capped at 4 hr</span>
                             )}
                           </div>
                         </div>
-                        <span className="px-5 py-2 rounded-xl text-xs font-bold bg-available text-white group-hover:bg-available/90 transition-colors shadow-sm">
+                        <span className="px-4 sm:px-5 py-2 rounded-xl text-xs font-bold bg-available text-white group-hover:bg-available/90 transition-colors shadow-sm shrink-0">
                           {capped ? "Book 4 hr" : "Book"}
                         </span>
                       </a>

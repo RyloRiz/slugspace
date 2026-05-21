@@ -48,7 +48,7 @@ export default function QuickStats({ slots, rooms, today, date }: QuickStatsProp
   const soonestRoom = soonest ? rooms.find((r) => r.id === soonest.itemId) : null;
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-3 gap-2 sm:gap-4">
       {/* Rooms Open */}
       <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 sm:p-5">
         <div className="flex items-baseline gap-1.5">

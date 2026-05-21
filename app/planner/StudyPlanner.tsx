@@ -447,14 +447,14 @@ export default function StudyPlanner() {
                         {/* Sessions per week */}
                         <div className="space-y-3">
                           <label className="text-xs font-semibold text-muted uppercase tracking-wider" id="sessions-label">Sessions per week</label>
-                          <div className="flex gap-2" role="radiogroup" aria-labelledby="sessions-label">
+                          <div className="flex gap-1.5 sm:gap-2" role="radiogroup" aria-labelledby="sessions-label">
                             {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                               <button
                                 key={n}
                                 onClick={() => updatePref("sessionsPerWeek", n)}
                                 role="radio"
                                 aria-checked={prefs.sessionsPerWeek === n}
-                                className={`flex-1 min-w-[44px] h-12 rounded-xl text-sm font-bold transition-all cursor-pointer border-2 ${
+                                className={`flex-1 min-w-[36px] sm:min-w-[44px] h-11 sm:h-12 rounded-xl text-sm font-bold transition-all cursor-pointer border-2 ${
                                   prefs.sessionsPerWeek === n
                                     ? "bg-primary text-white border-primary shadow-md shadow-primary/20 scale-105"
                                     : "border-border dark:border-border-dark text-muted hover:text-foreground hover:border-primary/30 dark:hover:border-secondary/30 hover:bg-primary/5 dark:hover:bg-secondary/5"
@@ -469,14 +469,14 @@ export default function StudyPlanner() {
                         {/* Duration */}
                         <div className="space-y-3">
                           <label className="text-xs font-semibold text-muted uppercase tracking-wider" id="duration-label">Duration each session</label>
-                          <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-labelledby="duration-label">
+                          <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="radiogroup" aria-labelledby="duration-label">
                             {DURATION_OPTIONS.map(({ value, label }) => (
                               <button
                                 key={value}
                                 onClick={() => updatePref("sessionDuration", value)}
                                 role="radio"
                                 aria-checked={prefs.sessionDuration === value}
-                                className={`h-12 rounded-xl text-sm font-semibold transition-all cursor-pointer border-2 ${
+                                className={`h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer border-2 ${
                                   prefs.sessionDuration === value
                                     ? "bg-primary text-white border-primary shadow-md shadow-primary/20 scale-105"
                                     : "border-border dark:border-border-dark text-muted hover:text-foreground hover:border-primary/30 dark:hover:border-secondary/30"
@@ -522,19 +522,19 @@ export default function StudyPlanner() {
 
                         <div className="space-y-3">
                           <label className="text-xs font-semibold text-muted uppercase tracking-wider" id="days-label">Preferred days</label>
-                          <div className="grid grid-cols-7 gap-2" role="group" aria-labelledby="days-label">
+                          <div className="grid grid-cols-7 gap-1 sm:gap-2" role="group" aria-labelledby="days-label">
                             {DAY_NAMES.map((name, i) => (
                               <button
                                 key={i}
                                 onClick={() => toggleDay(i)}
                                 aria-pressed={isDaySelected(i)}
-                                className={`h-14 rounded-xl text-xs font-bold transition-all cursor-pointer border-2 flex flex-col items-center justify-center gap-0.5 ${
+                                className={`h-12 sm:h-14 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer border-2 flex flex-col items-center justify-center gap-0.5 ${
                                   isDaySelected(i)
                                     ? "bg-primary text-white border-primary shadow-md shadow-primary/20 scale-105"
                                     : "border-border dark:border-border-dark text-muted hover:text-foreground hover:border-primary/30 dark:hover:border-secondary/30"
                                 }`}
                               >
-                                <span className="text-[10px] opacity-60">{DAY_NAMES_FULL[i].slice(0, 3)}</span>
+                                <span className="text-[9px] sm:text-[10px] opacity-60 hidden sm:block">{DAY_NAMES_FULL[i].slice(0, 3)}</span>
                                 <span>{name}</span>
                               </button>
                             ))}
@@ -551,7 +551,7 @@ export default function StudyPlanner() {
                         {/* Time of day */}
                         <div className="space-y-3">
                           <label className="text-xs font-semibold text-muted uppercase tracking-wider" id="time-label">Preferred time</label>
-                          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="time-label">
+                          <div className="grid grid-cols-2 gap-1.5 sm:gap-2" role="radiogroup" aria-labelledby="time-label">
                             {([
                               { type: "morning" as const, label: "Morning", sub: "7 AM – 12 PM", icon: "M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" },
                               { type: "afternoon" as const, label: "Afternoon", sub: "12 – 5 PM", icon: "M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" },
@@ -652,10 +652,10 @@ export default function StudyPlanner() {
 
                         <div className="p-5 sm:p-6 space-y-3">
                           <label className="text-xs font-semibold text-muted uppercase tracking-wider">Building</label>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                             <button
                               onClick={() => { updatePref("locationPreference", "any"); updatePref("floorPreferences", []); }}
-                              className={`h-14 rounded-xl text-sm font-semibold transition-all cursor-pointer border-2 ${
+                              className={`h-12 sm:h-14 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer border-2 ${
                                 prefs.locationPreference === "any"
                                   ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
                                   : "border-border dark:border-border-dark text-muted hover:text-foreground hover:border-primary/30 dark:hover:border-secondary/30"
@@ -667,7 +667,7 @@ export default function StudyPlanner() {
                               <button
                                 key={loc.id}
                                 onClick={() => { updatePref("locationPreference", loc.id); updatePref("floorPreferences", []); if (prefs.roomFilter === "custom") updatePref("selectedRoomIds", []); }}
-                                className={`h-14 rounded-xl text-sm font-semibold transition-all cursor-pointer border-2 relative overflow-hidden ${
+                                className={`h-12 sm:h-14 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer border-2 relative overflow-hidden ${
                                   prefs.locationPreference === loc.id
                                     ? "border-primary shadow-md shadow-primary/20 text-white"
                                     : "border-border dark:border-border-dark text-muted hover:text-foreground hover:border-primary/30 dark:hover:border-secondary/30"
@@ -1172,12 +1172,12 @@ function ResultCard({ block, index }: { block: CandidateBlock; index: number }) 
           </p>
         </div>
 
-        <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-available/5 border border-available/15">
-          <div>
-            <span className="text-sm font-semibold text-foreground">
+        <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-3 rounded-xl bg-available/5 border border-available/15">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-sm font-semibold text-foreground">
               {formatTime(block.startTime)} – {formatTime(block.endTime)}
             </span>
-            <span className="text-xs text-muted ml-2">{formatDuration(block.durationMins)}</span>
+            <span className="text-[11px] sm:text-xs text-muted ml-1.5 sm:ml-2">{formatDuration(block.durationMins)}</span>
           </div>
           <BookLink
             href={bookingUrl(block.room.id, { start: block.startTime, end: block.endTime, roomName: block.room.name })}

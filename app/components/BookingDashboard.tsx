@@ -208,11 +208,13 @@ export default function BookingDashboard() {
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 shrink-0 group cursor-pointer">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 group-hover:bg-white/15 transition-colors">
-                <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.331 0 4.472.89 6.074 2.356M12 6.042a8.967 8.967 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.356" />
-                </svg>
-              </div>
+              <Image
+                src="/ucscbooking.png"
+                alt="UCSC Room Booker"
+                width={36}
+                height={36}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shrink-0 group-hover:scale-105 transition-transform"
+              />
               <div className="hidden sm:block">
                 <h1 className="text-lg font-normal text-white leading-tight" style={{ fontFamily: "var(--font-display)" }}>
                   Room Booker
@@ -222,12 +224,12 @@ export default function BookingDashboard() {
             </Link>
 
             {/* Location selector — centered */}
-            <nav className="flex gap-1 p-1 rounded-2xl bg-white/8">
+            <nav className="flex gap-1 p-1 rounded-2xl bg-white/8 overflow-x-auto scrollbar-none">
               {LOCATIONS.map((loc) => (
                 <button
                   key={loc.id}
                   onClick={() => handleLocationChange(loc.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     locationId === loc.id
                       ? "bg-accent text-primary shadow-md shadow-black/15"
                       : "text-white/70 hover:text-white hover:bg-white/8"
@@ -270,7 +272,7 @@ export default function BookingDashboard() {
       </header>
 
       {/* ── Library Hero Banner ── */}
-      <div className="relative h-48 sm:h-56 overflow-hidden">
+      <div className="relative h-40 sm:h-48 md:h-56 overflow-hidden">
         <Image
           src={LIBRARY_IMAGES[locationId]?.hero || LIBRARY_IMAGES[16578].hero}
           alt={LIBRARY_IMAGES[locationId]?.alt || "Library"}
@@ -285,15 +287,15 @@ export default function BookingDashboard() {
 
         {/* Content overlay — date hero + group tabs */}
         <div className="absolute inset-0 flex items-end">
-          <div className="max-w-6xl w-full mx-auto px-5 pb-6 space-y-4">
+          <div className="max-w-6xl w-full mx-auto px-4 sm:px-5 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
             {/* Group tabs */}
             {currentLocation.groups.length > 1 && (
-              <div className="flex gap-1 p-0.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 w-fit">
+              <div className="flex gap-1 p-0.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 w-fit max-w-full overflow-x-auto scrollbar-none">
                 {currentLocation.groups.map((group) => (
                   <button
                     key={group.id}
                     onClick={() => { setGroupId(group.id); setSelectedFloors([]); setSelectedFeatures([]); setSearch(""); }}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       groupId === group.id
                         ? "bg-white/90 text-primary shadow-sm"
                         : "text-white/80 hover:text-white hover:bg-white/10"
@@ -306,8 +308,8 @@ export default function BookingDashboard() {
             )}
 
             {/* Date Navigation */}
-            <div className="flex items-end gap-4">
-              <div className="flex-1">
+            <div className="flex items-end gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
                 <input
                   ref={dateInputRef}
                   type="date"
@@ -323,19 +325,19 @@ export default function BookingDashboard() {
                   onClick={() => dateInputRef.current?.showPicker()}
                   className="text-left cursor-pointer group"
                 >
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1.5 text-white/60">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1 sm:mb-1.5 text-white/60">
                     {isToday ? "Today" : "Viewing"}
                   </p>
                   <h2
-                    className="text-3xl sm:text-4xl text-white leading-none drop-shadow-sm group-hover:text-accent transition-colors"
+                    className="text-2xl sm:text-3xl md:text-4xl text-white leading-none drop-shadow-sm group-hover:text-accent transition-colors"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     {formatDateDisplay(date)}
                   </h2>
-                  <p className="text-sm text-white/50 mt-1">{formatDateYear(date)}</p>
+                  <p className="text-xs sm:text-sm text-white/50 mt-1">{formatDateYear(date)}</p>
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 pb-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 pb-1 shrink-0">
                 <button
                   onClick={goPrev}
                   disabled={!canGoPrev}
@@ -352,7 +354,7 @@ export default function BookingDashboard() {
                 {!isToday && (
                   <button
                     onClick={goToday}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-primary bg-white hover:bg-white/90 shadow-sm hover:shadow transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-primary bg-white hover:bg-white/90 shadow-sm hover:shadow transition-all cursor-pointer"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
@@ -374,7 +376,7 @@ export default function BookingDashboard() {
         </div>
       </div>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 py-8 space-y-8">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-5 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* ── Quick Book ── */}
         {!loading && !error && (
           <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
@@ -391,12 +393,12 @@ export default function BookingDashboard() {
 
         {/* ── Toolbar ── */}
         <div
-          className="flex items-center justify-between gap-3 py-3 border-y border-border dark:border-border-dark animate-fade-in-up"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-3 border-y border-border dark:border-border-dark animate-fade-in-up"
           style={{ animationDelay: "0.1s" }}
         >
           <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none min-w-0">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
@@ -405,7 +407,7 @@ export default function BookingDashboard() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search rooms..."
-                className="w-36 sm:w-44 pl-9 pr-3 py-2 rounded-xl text-xs border border-border dark:border-border-dark bg-card dark:bg-card-dark text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:w-56 transition-all"
+                className="w-full sm:w-44 pl-9 pr-3 py-2 rounded-xl text-xs border border-border dark:border-border-dark bg-card dark:bg-card-dark text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 sm:focus:w-56 transition-all"
               />
               {search && (
                 <button
@@ -621,7 +623,7 @@ export default function BookingDashboard() {
 
         {/* ── Empty / Error / Loading states ── */}
         {!loading && !error && slots.length === 0 && (
-          <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-12 text-center space-y-3">
+          <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-8 sm:p-12 text-center space-y-3">
             {date > todayStr() ? (
               <>
                 <div className="w-14 h-14 rounded-2xl bg-surface dark:bg-surface-dark flex items-center justify-center mx-auto mb-4">
@@ -659,7 +661,7 @@ export default function BookingDashboard() {
         {loading && (
           <div className="space-y-6">
             {/* Stats skeleton */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-5 animate-pulse">
                   <div className="h-8 bg-surface dark:bg-surface-dark rounded-lg w-20 mb-2" />
@@ -724,7 +726,7 @@ export default function BookingDashboard() {
         {!loading && !error && (
           <Link
             href="/planner"
-            className="group relative flex items-center gap-5 rounded-2xl overflow-hidden p-6 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10"
+            className="group relative flex items-center gap-4 sm:gap-5 rounded-2xl overflow-hidden p-4 sm:p-6 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10"
           >
             <Image
               src="/libraries/se-exterior.jpeg"
@@ -733,14 +735,14 @@ export default function BookingDashboard() {
               className="object-cover object-center brightness-[0.35] group-hover:brightness-[0.3] group-hover:scale-105 transition-all duration-500"
               sizes="(max-width: 1152px) 100vw, 1152px"
             />
-            <div className="relative z-10 w-12 h-12 rounded-2xl bg-accent/25 backdrop-blur-sm flex items-center justify-center shrink-0 group-hover:bg-accent/35 transition-colors">
-              <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <div className="relative z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-accent/25 backdrop-blur-sm flex items-center justify-center shrink-0 group-hover:bg-accent/35 transition-colors">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
               </svg>
             </div>
             <div className="relative z-10 flex-1 min-w-0">
               <p className="text-sm font-bold text-white" style={{ fontFamily: "var(--font-display)" }}>Plan your weekly study schedule</p>
-              <p className="text-xs text-white/60 mt-0.5">Tell us when and how you study — we&apos;ll find the best rooms and times.</p>
+              <p className="text-xs text-white/60 mt-0.5 hidden sm:block">Tell us when and how you study — we&apos;ll find the best rooms and times.</p>
             </div>
             <svg className="relative z-10 w-5 h-5 text-white/50 group-hover:text-accent group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />

@@ -232,7 +232,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
             {/* Duration */}
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Duration</label>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 {CRAM_DURATION_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}
@@ -315,12 +315,12 @@ export default function CramSession({ initialDate }: CramSessionProps) {
       {cramStep === "results" && (
         <div>
           {/* Summary bar */}
-          <div className={`px-5 py-3 flex items-center justify-between border-b ${
+          <div className={`px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 border-b ${
             cramResults.length > 0
               ? "border-available/20 bg-available/5"
               : "border-booked/20 bg-booked/5"
           }`}>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
               {cramResults.length > 0 ? (
                 <div className="w-6 h-6 rounded-md bg-available/15 text-available flex items-center justify-center shrink-0">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -334,13 +334,13 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                   </svg>
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <span className="text-sm font-semibold text-foreground">
                   {cramResults.length > 0
                     ? `${cramResults.length} slot${cramResults.length > 1 ? "s" : ""} found`
                     : "No slots found"}
                 </span>
-                <span className="text-xs text-muted ml-2">
+                <span className="text-xs text-muted ml-2 hidden sm:inline">
                   {cramDateDisplay} · {formatDurationLong(cramPrefs.sessionDuration)}
                   {cramPrefs.groupSize > 1 ? ` · ${cramPrefs.groupSize}+ seats` : ""}
                 </span>
@@ -370,9 +370,9 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                 const faved = isFavorite(block.room.id);
 
                 return (
-                  <div key={`${block.room.id}-${block.startTime}`} className="flex items-center gap-3 px-5 py-3 hover:bg-available/3 transition-colors">
-                    <div className="shrink-0 text-center min-w-[68px]">
-                      <p className="text-sm font-bold text-foreground tabular-nums">{formatTime(block.startTime)}</p>
+                  <div key={`${block.room.id}-${block.startTime}`} className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 hover:bg-available/3 transition-colors">
+                    <div className="shrink-0 text-center min-w-[56px] sm:min-w-[68px]">
+                      <p className="text-xs sm:text-sm font-bold text-foreground tabular-nums">{formatTime(block.startTime)}</p>
                       <p className="text-[10px] text-muted tabular-nums">{formatTime(block.endTime)}</p>
                     </div>
                     <div className="w-px h-8 bg-border dark:bg-border-dark shrink-0" />
@@ -380,7 +380,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                       <div className="flex items-center gap-1.5">
                         <Link
                           href={`/room/${block.room.id}?date=${block.date}`}
-                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
+                          className="text-xs sm:text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
                         >
                           {block.room.name}
                         </Link>
@@ -390,15 +390,15 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                           </svg>
                         )}
                       </div>
-                      <p className="text-[11px] text-muted truncate">
-                        {loc?.shortName} · {block.room.floor} Floor · {block.room.capacity} seats · {formatDuration(block.durationMins)}
+                      <p className="text-[10px] sm:text-[11px] text-muted truncate">
+                        {loc?.shortName} · {block.room.floor} · {block.room.capacity} seats · {formatDuration(block.durationMins)}
                       </p>
                     </div>
                     <BookLink
                       href={bookingUrl(block.room.id, { start: block.startTime, end: block.endTime, roomName: block.room.name })}
                       slotDate={cramPrefs.date}
                       today={todayStr()}
-                      className="px-3.5 py-1.5 rounded-lg bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
+                      className="px-3 sm:px-3.5 py-1.5 rounded-lg bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
                     >
                       Book
                     </BookLink>

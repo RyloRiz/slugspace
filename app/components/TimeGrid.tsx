@@ -207,14 +207,17 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
               </span>
             </div>
           ) : (
-            <span className="text-[11px] text-muted/50">Hover over a time slot for details</span>
+            <>
+              <span className="text-[11px] text-muted/50 hidden sm:inline">Hover over a time slot for details</span>
+              <span className="text-[11px] text-muted/50 sm:hidden">Tap a time slot for details</span>
+            </>
           )}
         </div>
 
         <div className="overflow-x-auto">
           {/* Time axis header */}
           <div className="flex border-b border-border dark:border-border-dark">
-            <div className="shrink-0 w-48 min-w-[192px] px-4 py-2.5 bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark flex items-end">
+            <div className="shrink-0 w-32 sm:w-48 min-w-[128px] sm:min-w-[192px] px-3 sm:px-4 py-2.5 bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark flex items-end">
               <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Room</span>
             </div>
             <div className="flex-1 flex items-end relative min-w-0 pl-6 pr-3">
@@ -261,10 +264,10 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
               {/* Room label */}
               <Link
                 href={`/room/${room.id}?date=${date}`}
-                className="shrink-0 w-48 min-w-[192px] px-4 py-3 border-r border-border dark:border-border-dark hover:bg-surface/80 dark:hover:bg-surface-dark/60 transition-colors cursor-pointer flex flex-col justify-center"
+                className="shrink-0 w-32 sm:w-48 min-w-[128px] sm:min-w-[192px] px-3 sm:px-4 py-2.5 sm:py-3 border-r border-border dark:border-border-dark hover:bg-surface/80 dark:hover:bg-surface-dark/60 transition-colors cursor-pointer flex flex-col justify-center"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-foreground truncate leading-tight">{room.name}</p>
+                <div className="flex items-center justify-between gap-1 sm:gap-2">
+                  <p className="text-xs sm:text-sm font-semibold text-foreground truncate leading-tight">{room.name}</p>
                   {future > 0 && (
                     <span className={`text-[10px] font-bold tabular-nums shrink-0 px-1.5 py-0.5 rounded-full ${
                       bookable > 0
@@ -275,8 +278,8 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-muted mt-0.5 truncate">
-                  {room.floor} floor · {room.capacity} seats
+                <p className="text-[10px] sm:text-[11px] text-muted mt-0.5 truncate">
+                  {room.floor} · {room.capacity} seats
                 </p>
               </Link>
 
