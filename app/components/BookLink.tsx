@@ -157,20 +157,22 @@ interface BookLinkProps {
   today: string;
   className?: string;
   children?: React.ReactNode;
+  onBook?: () => void;
 }
 
-export default function BookLink({ href, slotDate, today, className, children }: BookLinkProps) {
+export default function BookLink({ href, slotDate, today, className, children, onBook }: BookLinkProps) {
   const [showModal, setShowModal] = useState(false);
   const isToday = slotDate === today;
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
+      onBook?.();
       if (!isToday) {
         e.preventDefault();
         setShowModal(true);
       }
     },
-    [isToday]
+    [isToday, onBook]
   );
 
   return (

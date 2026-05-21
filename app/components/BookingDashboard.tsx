@@ -15,6 +15,8 @@ import TimeGrid, { SlotData } from "./TimeGrid";
 import CramSession from "./CramSession";
 import AlertPanel from "./AlertPanel";
 import BookingQueue from "./BookingQueue";
+import BookingHistory from "./BookingHistory";
+import { useFilterPresets, FilterPreset } from "../lib/filter-presets";
 
 type ViewMode = "cards" | "grid";
 type SortMode = "availability" | "name" | "capacity";
@@ -103,7 +105,10 @@ export default function BookingDashboard() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [presetName, setPresetName] = useState("");
+  const [showPresetSave, setShowPresetSave] = useState(false);
   const { ids: favoriteIds } = useFavorites();
+  const { presets, addPreset, removePreset } = useFilterPresets();
 
   const currentLocation = LOCATIONS.find((l) => l.id === locationId)!;
   const rooms = getRoomsForSelection(locationId, groupId);
@@ -140,6 +145,36 @@ export default function BookingDashboard() {
     setOnlyAvailable(false);
     setOnlyFavorites(false);
     setSort("availability");
+  };
+
+  const applyPreset = (preset: FilterPreset) => {
+    handleLocationChange(preset.locationId);
+    // Need to set groupId after location change
+    setGroupId(preset.groupId);
+    setSelectedFloors(preset.floors);
+    setMinCapacity(preset.minCapacity);
+    setSelectedFeatures(preset.features);
+    setOnlyAvailable(preset.onlyAvailable);
+    setOnlyFavorites(preset.onlyFavorites);
+    setSort(preset.sort as SortMode);
+    setSearch("");
+  };
+
+  const saveCurrentAsPreset = () => {
+    if (!presetName.trim()) return;
+    addPreset({
+      name: presetName.trim(),
+      locationId,
+      groupId,
+      floors: selectedFloors,
+      minCapacity,
+      features: selectedFeatures,
+      onlyAvailable,
+      onlyFavorites,
+      sort,
+    });
+    setPresetName("");
+    setShowPresetSave(false);
   };
 
   const toggleFloor = (f: string) => {
@@ -401,6 +436,13 @@ export default function BookingDashboard() {
           </div>
         )}
 
+        {/* ── Booking History ── */}
+        {!loading && !error && (
+          <div className="animate-fade-in-up" style={{ animationDelay: "0.09s" }}>
+            <BookingHistory />
+          </div>
+        )}
+
         {/* ── Toolbar ── */}
         <div
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-3 border-y border-border dark:border-border-dark animate-fade-in-up"
@@ -591,6 +633,101 @@ export default function BookingDashboard() {
               </div>
             )}
 
+            {/* Presets */}
+            {(presets.length > 0 || advancedFilterCount > 0) && (
+              <div className="space-y-2 pt-3 border-t border-border dark:border-border-dark">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Saved Presets</span>
+                  {advancedFilterCount > 0 && !showPresetSave && (
+                    <button
+                      onClick={() => setShowPresetSave(true)}
+                      className="text-[11px] font-semibold text-primary dark:text-secondary hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      Save current
+                    </button>
+                  )}
+                </div>
+
+                {/* Save form */}
+                {showPresetSave && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={presetName}
+                      onChange={(e) => setPresetName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveCurrentAsPreset();
+                        if (e.key === "Escape") { setShowPresetSave(false); setPresetName(""); }
+                      }}
+                      placeholder="Preset name..."
+                      maxLength={30}
+                      autoFocus
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                    />
+                    <button
+                      onClick={saveCurrentAsPreset}
+                      disabled={!presetName.trim()}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary dark:bg-secondary text-white hover:bg-primary/90 dark:hover:bg-secondary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setShowPresetSave(false); setPresetName(""); }}
+                      className="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-foreground cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {/* Preset list */}
+                {presets.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {presets.map((p) => {
+                      const loc = LOCATIONS.find((l) => l.id === p.locationId);
+                      const summary = [
+                        loc?.shortName,
+                        ...p.floors,
+                        p.minCapacity > 0 ? `${p.minCapacity}+` : null,
+                        ...p.features,
+                        p.onlyFavorites ? "Favs" : null,
+                      ].filter(Boolean).join(", ");
+                      return (
+                        <div key={p.id} className="group flex items-center gap-1">
+                          <button
+                            onClick={() => applyPreset(p)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-accent/20 bg-accent/5 text-accent hover:bg-accent/10 hover:border-accent/30 transition-all cursor-pointer"
+                            title={summary}
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                            </svg>
+                            {p.name}
+                          </button>
+                          <button
+                            onClick={() => removePreset(p.id)}
+                            className="p-1 rounded-md text-muted/0 group-hover:text-muted/40 hover:!text-booked transition-colors cursor-pointer"
+                            title="Delete preset"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {presets.length === 0 && !showPresetSave && (
+                  <p className="text-[11px] text-muted/50">No saved presets yet. Set your filters and save them for quick access.</p>
+                )}
+              </div>
+            )}
+
             {/* Clear all */}
             {activeFilterCount > 0 && (
               <div className="flex items-center justify-between pt-3 border-t border-border dark:border-border-dark">
@@ -628,6 +765,25 @@ export default function BookingDashboard() {
               </button>
             ))}
             <button onClick={clearAllFilters} className="text-[11px] text-muted hover:text-foreground cursor-pointer ml-1 font-medium">Clear all</button>
+          </div>
+        )}
+
+        {/* Quick preset pills (when panel closed) */}
+        {!filtersOpen && presets.length > 0 && advancedFilterCount === 0 && (
+          <div className="flex items-center gap-2 flex-wrap -mt-3">
+            <span className="text-[10px] font-bold text-muted uppercase tracking-widest mr-1">Presets</span>
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => applyPreset(p)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-accent/5 text-accent cursor-pointer hover:bg-accent/10 transition-colors border border-accent/10"
+              >
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                </svg>
+                {p.name}
+              </button>
+            ))}
           </div>
         )}
 

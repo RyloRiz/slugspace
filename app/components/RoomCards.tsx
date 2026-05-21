@@ -5,6 +5,7 @@ import { Room } from "../lib/rooms";
 import { useFavorites } from "../lib/favorites";
 import { useAlerts } from "../lib/alerts";
 import { useBookingQueue } from "../lib/booking-queue";
+import { useRoomNotes } from "../lib/room-notes";
 import { bookingUrl } from "../lib/booking-url";
 import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 import { getQuickTrend, formatTrendHour, trendLabel } from "../lib/trends";
@@ -81,6 +82,7 @@ export default function RoomCards({ slots, rooms, date, today, filter }: RoomCar
   const { isFavorite, toggle } = useFavorites();
   const { isWatching, addAlert, removeAlert } = useAlerts();
   const { isQueued, toggleSlot } = useBookingQueue();
+  const { hasNote, getNote } = useRoomNotes();
 
   const slotsByRoom = new Map<number, SlotData[]>();
   slots.forEach((s) => {
@@ -233,6 +235,16 @@ export default function RoomCards({ slots, rooms, date, today, filter }: RoomCar
                   </>
                 )}
               </p>
+
+              {/* Personal note */}
+              {hasNote(room.id) && (
+                <div className="mt-2.5 flex items-start gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/4 dark:bg-secondary/4 border border-primary/8 dark:border-secondary/8">
+                  <svg className="w-3 h-3 text-primary/40 dark:text-secondary/40 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                  </svg>
+                  <p className="text-[10px] text-muted leading-snug line-clamp-2">{getNote(room.id)}</p>
+                </div>
+              )}
 
               {/* Trend insight */}
               {(() => {

@@ -7,6 +7,7 @@ import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 import { bookingUrl } from "../lib/booking-url";
 import BookLink from "./BookLink";
 import { useFavorites } from "../lib/favorites";
+import { addBookingRecord } from "../lib/booking-history";
 import {
   CandidateBlock,
   CramPreferences,
@@ -398,6 +399,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                       href={bookingUrl(block.room.id, { start: block.startTime, end: block.endTime, roomName: block.room.name })}
                       slotDate={cramPrefs.date}
                       today={todayStr()}
+                      onBook={() => addBookingRecord(block.room.id, block.room.name, cramPrefs.date, block.startTime, block.endTime, block.room.locationId, block.room.groupId)}
                       className="px-3 sm:px-3.5 py-1.5 rounded-lg bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
                     >
                       Book
