@@ -9,7 +9,8 @@ import { isSlotAvailable, isSlotFuture } from "../../lib/slots";
 import { SlotData } from "../../components/TimeGrid";
 
 function todayStr(): string {
-  return new Date().toISOString().split("T")[0];
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function tomorrowStr(dateStr: string): string {
@@ -466,7 +467,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                   return (
                     <div key={i} className="space-y-1">
                       <a
-                        href={bookingUrl(room.id)}
+                        href={bookingUrl(room.id, { start: block.start, end: bookEnd, roomName: room.name })}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between px-4 py-3 rounded-xl bg-card dark:bg-card-dark border border-available/20 hover:border-available/50 hover:shadow-md transition-all cursor-pointer group"
@@ -562,7 +563,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                           <span className="text-xs text-muted">Past</span>
                         ) : si.available ? (
                           <a
-                            href={bookingUrl(room.id)}
+                            href={bookingUrl(room.id, { start: si.slot.start, end: si.slot.end, roomName: room.name })}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1 rounded-lg text-xs font-semibold bg-available/10 text-available hover:bg-available/20 transition-colors cursor-pointer"

@@ -16,10 +16,9 @@ function formatTimeShort(datetime: string): string {
   const time = datetime.split(" ")[1];
   const [h, m] = time.split(":");
   const hour = parseInt(h);
-  const ampm = hour >= 12 ? "p" : "a";
+  const ampm = hour >= 12 ? "pm" : "am";
   const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-  if (m === "00") return `${display}${ampm}`;
-  return `${display}:${m}${ampm}`;
+  return `${display}:${m} ${ampm}`;
 }
 
 export default function QuickStats({ slots, rooms, today, date }: QuickStatsProps) {

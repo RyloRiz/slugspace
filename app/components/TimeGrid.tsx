@@ -29,10 +29,9 @@ function parseTime(datetime: string): { hour: number; min: number } {
 
 function formatTimeShort(datetime: string): string {
   const { hour, min } = parseTime(datetime);
-  const ampm = hour >= 12 ? "p" : "a";
+  const ampm = hour >= 12 ? "pm" : "am";
   const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-  if (min === 0) return `${display}${ampm}`;
-  return `${display}:${min.toString().padStart(2, "0")}${ampm}`;
+  return `${display}:${min.toString().padStart(2, "0")} ${ampm}`;
 }
 
 function formatTimeFull(datetime: string): string {
@@ -138,23 +137,23 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
             <div className="shrink-0 w-48 min-w-[192px] px-4 py-2.5 bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark flex items-end">
               <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Room</span>
             </div>
-            <div className="flex-1 flex items-end relative min-w-0">
+            <div className="flex-1 flex items-end relative min-w-0 pl-6 pr-3">
               {timeSlots.map((time, idx) => {
                 const isHour = time.split(" ")[1].split(":")[1] === "00";
                 return (
                   <div
                     key={time}
-                    className="flex-1 min-w-[18px] relative"
+                    className="flex-1 min-w-[28px] relative"
                   >
                     {isHour ? (
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-semibold text-muted tabular-nums pb-1">
+                      <div className="flex flex-col items-start">
+                        <span className="text-[10px] font-semibold text-muted tabular-nums pb-1 -translate-x-1/2">
                           {formatTimeShort(time)}
                         </span>
                         <div className="w-px h-2 bg-muted/30" />
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-start">
                         <span className="text-[10px] pb-1 invisible">.</span>
                         <div className="w-px h-1 bg-border dark:bg-border-dark" />
                       </div>
@@ -197,12 +196,12 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                   )}
                 </div>
                 <p className="text-[11px] text-muted mt-0.5 truncate">
-                  {room.floor} · {room.capacity} seats
+                  {room.floor} floor · {room.capacity} seats
                 </p>
               </Link>
 
               {/* Slot cells */}
-              <div className="flex-1 flex items-stretch relative py-1 min-w-0">
+              <div className="flex-1 flex items-stretch relative py-1 min-w-0 pl-6 pr-3">
                 {roomSlots.map(({ time, state, slot }, idx) => {
                   const prev = idx > 0 ? roomSlots[idx - 1] : null;
                   const next = idx < roomSlots.length - 1 ? roomSlots[idx + 1] : null;
@@ -238,7 +237,7 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                   }
 
                   const cellProps = {
-                    className: `flex-1 min-w-[18px] h-9 ${bg} ${rounded} transition-all duration-100 relative ${
+                    className: `flex-1 min-w-[28px] h-9 ${bg} ${rounded} transition-all duration-100 relative ${
                       state === "available" ? "cursor-pointer" : ""
                     }`,
                     onMouseEnter: () => { setHoveredRoom(room.id); setHoveredSlotIdx(idx); },
@@ -249,7 +248,7 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                     return (
                       <a
                         key={time}
-                        href={bookingUrl(room.id)}
+                        href={bookingUrl(room.id, { start: slot.start, end: slot.end, roomName: room.name })}
                         target="_blank"
                         rel="noopener noreferrer"
                         {...cellProps}

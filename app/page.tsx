@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import BookingDashboard from "./components/BookingDashboard";
 
 export default function Home() {
-  return <BookingDashboard />;
+  return (
+    <Suspense>
+      <BookingDashboard />
+    </Suspense>
+  );
 }

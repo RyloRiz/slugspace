@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { LOCATIONS, ROOMS } from "../lib/rooms";
 import { isSlotAvailable, isSlotFuture } from "../lib/slots";
@@ -12,11 +12,9 @@ import {
   ScheduleRecommendation,
   DayAvailability,
   SlotInfo,
-  CramPreferences,
   defaultPreferences,
   getUpcomingDates,
   generateSchedule,
-  generateCramOptions,
 } from "../lib/planner";
 import type { SlotData } from "../components/TimeGrid";
 
@@ -24,7 +22,8 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function todayStr(): string {
-  return new Date().toISOString().split("T")[0];
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function tomorrowStr(dateStr: string): string {
@@ -76,17 +75,6 @@ const DURATION_OPTIONS = [
   { value: 240, label: "4hr" },
 ];
 
-type CramStep = "setup" | "loading" | "results";
-
-const CRAM_DURATION_OPTIONS = [
-  { value: 30, label: "30m" },
-  { value: 60, label: "1 hr" },
-  { value: 90, label: "1.5 hr" },
-  { value: 120, label: "2 hr" },
-  { value: 180, label: "3 hr" },
-  { value: 240, label: "4 hr" },
-];
-
 export default function StudyPlanner() {
   const { ids: favoriteIds } = useFavorites();
   const [step, setStep] = useState<Step>("preferences");
@@ -99,18 +87,6 @@ export default function StudyPlanner() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
-
-  // ── Cram session state ──
-  const [cramStep, setCramStep] = useState<CramStep>("setup");
-  const [cramPrefs, setCramPrefs] = useState<CramPreferences>({
-    date: todayStr(),
-    sessionDuration: 120,
-    groupSize: 1,
-    locationPreference: "any",
-  });
-  const [cramResults, setCramResults] = useState<CandidateBlock[]>([]);
-  const [cramError, setCramError] = useState<string | null>(null);
-  const cramDateInputRef = useRef<HTMLInputElement>(null);
 
   const advancedCount =
     (prefs.groupSize > 1 ? 1 : 0) +
@@ -333,83 +309,6 @@ export default function StudyPlanner() {
       setStep("preferences");
     }
   }, [prefs, favoriteIds]);
-
-  const runCramSearch = useCallback(async () => {
-    setCramStep("loading");
-    setCramError(null);
-    setCramResults([]);
-
-    try {
-      const today = todayStr();
-      const end = tomorrowStr(cramPrefs.date);
-
-      // Determine which groups to fetch
-      const groupsToFetch: { lid: number; gid: number }[] = [];
-      if (cramPrefs.locationPreference === "any") {
-        for (const loc of LOCATIONS) {
-          for (const group of loc.groups) {
-            groupsToFetch.push({ lid: loc.id, gid: group.id });
-          }
-        }
-      } else {
-        const loc = LOCATIONS.find((l) => l.id === cramPrefs.locationPreference);
-        if (loc) {
-          for (const group of loc.groups) {
-            groupsToFetch.push({ lid: loc.id, gid: group.id });
-          }
-        }
-      }
-
-      const daySlots: SlotInfo[] = [];
-
-      const fetches = groupsToFetch.map(async ({ lid, gid }) => {
-        try {
-          const res = await fetch(`/api/availability?start=${cramPrefs.date}&end=${end}&lid=${lid}&gid=${gid}`);
-          if (!res.ok) return [];
-          const data = await res.json();
-          return (data.slots || []) as SlotData[];
-        } catch {
-          return [];
-        }
-      });
-
-      const results = await Promise.all(fetches);
-      for (const slots of results) {
-        for (const s of slots) {
-          daySlots.push({
-            start: s.start,
-            end: s.end,
-            itemId: s.itemId,
-            checksum: s.checksum,
-            available: isSlotAvailable(s),
-            future: isSlotFuture(s, today),
-          });
-        }
-      }
-
-      if (daySlots.length === 0) {
-        setCramError("No availability data for this date. Bookings may not be open yet, or the library may be closed.");
-        setCramStep("setup");
-        return;
-      }
-
-      const options = generateCramOptions(
-        cramPrefs,
-        { date: cramPrefs.date, slots: daySlots },
-        ROOMS,
-        favoriteIds
-      );
-
-      setCramResults(options);
-      setCramStep("results");
-    } catch {
-      setCramError("Something went wrong. Please try again.");
-      setCramStep("setup");
-    }
-  }, [cramPrefs, favoriteIds]);
-
-  const cramDateDisplay = formatDateShort(cramPrefs.date);
-  const isCramToday = cramPrefs.date === todayStr();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -992,243 +891,6 @@ export default function StudyPlanner() {
         )}
       </main>
 
-      {/* ── CRAM SESSION SECTION ── */}
-      <section className="border-t-4 border-accent/30">
-        <div className="max-w-2xl w-full mx-auto px-4 py-8 space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground leading-tight" style={{ fontFamily: "var(--font-display)" }}>
-                Cram Session
-              </h2>
-              <p className="text-xs text-muted">Find available rooms for a single day — perfect for last-minute study sessions.</p>
-            </div>
-          </div>
-
-          {cramError && (
-            <div className="rounded-xl border border-booked/30 bg-booked/5 p-4 text-sm text-booked flex items-start gap-3" role="alert">
-              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-              {cramError}
-            </div>
-          )}
-
-          {cramStep === "setup" && (
-            <div className="space-y-4">
-              <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-5 space-y-5">
-                <legend className="sr-only">Cram session preferences</legend>
-
-                {/* Date picker */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted uppercase tracking-wider">Date</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={cramDateInputRef}
-                      type="date"
-                      value={cramPrefs.date}
-                      min={todayStr()}
-                      onChange={(e) => {
-                        if (e.target.value >= todayStr()) setCramPrefs((p) => ({ ...p, date: e.target.value }));
-                      }}
-                      className="sr-only"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => cramDateInputRef.current?.showPicker()}
-                      className="flex-1 flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-left hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
-                    >
-                      <svg className="w-4.5 h-4.5 text-muted shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                      </svg>
-                      <span className="text-sm font-semibold text-foreground">{cramDateDisplay}</span>
-                      {isCramToday && (
-                        <span className="px-2 py-0.5 rounded-md bg-available/10 text-available text-[10px] font-bold uppercase">Today</span>
-                      )}
-                    </button>
-                    {!isCramToday && (
-                      <button
-                        onClick={() => setCramPrefs((p) => ({ ...p, date: todayStr() }))}
-                        className="px-3 py-2 min-h-[48px] rounded-xl text-xs font-semibold text-primary border border-primary/20 hover:bg-primary/5 transition-colors cursor-pointer"
-                      >
-                        Today
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Duration */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted uppercase tracking-wider">How long do you need?</label>
-                  <div className="flex flex-wrap gap-2">
-                    {CRAM_DURATION_OPTIONS.map(({ value, label }) => (
-                      <button
-                        key={value}
-                        onClick={() => setCramPrefs((p) => ({ ...p, sessionDuration: value }))}
-                        className={`px-4 min-h-[44px] rounded-xl text-sm font-semibold transition-all cursor-pointer border ${
-                          cramPrefs.sessionDuration === value
-                            ? "bg-accent text-primary border-accent shadow-sm"
-                            : "border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:border-slate-300 dark:hover:border-slate-600"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  {cramPrefs.sessionDuration === 240 && (
-                    <p className="text-[11px] text-accent">Maximum allowed per UCSC Library policy.</p>
-                  )}
-                </div>
-
-                {/* Location + group size row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label htmlFor="cram-group-size" className="text-xs font-medium text-muted uppercase tracking-wider">Group size</label>
-                    <select
-                      id="cram-group-size"
-                      value={cramPrefs.groupSize}
-                      onChange={(e) => setCramPrefs((p) => ({ ...p, groupSize: parseInt(e.target.value) }))}
-                      className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option value={1}>Just me</option>
-                      <option value={2}>2 people</option>
-                      <option value={4}>3–4 people</option>
-                      <option value={6}>5–6 people</option>
-                      <option value={8}>7–8 people</option>
-                      <option value={10}>9–10 people</option>
-                      <option value={14}>11–14 people</option>
-                      <option value={20}>15+ people</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label htmlFor="cram-building" className="text-xs font-medium text-muted uppercase tracking-wider">Building</label>
-                    <select
-                      id="cram-building"
-                      value={cramPrefs.locationPreference === "any" ? "any" : String(cramPrefs.locationPreference)}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setCramPrefs((p) => ({ ...p, locationPreference: v === "any" ? "any" : parseInt(v) }));
-                      }}
-                      className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option value="any">Either building</option>
-                      {LOCATIONS.map((loc) => (
-                        <option key={loc.id} value={loc.id}>{loc.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </fieldset>
-
-              <button
-                onClick={runCramSearch}
-                className="w-full py-3.5 rounded-xl bg-accent text-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
-              >
-                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                </svg>
-                Find available slots
-              </button>
-            </div>
-          )}
-
-          {cramStep === "loading" && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-10 text-center space-y-4">
-              <div className="w-10 h-10 border-[3px] border-accent/30 border-t-accent rounded-full animate-spin mx-auto" />
-              <div>
-                <p className="text-sm font-semibold text-foreground">Scanning {cramDateDisplay}...</p>
-                <p className="text-xs text-muted mt-1">Checking all rooms for available blocks</p>
-              </div>
-            </div>
-          )}
-
-          {cramStep === "results" && (
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className={`rounded-xl border p-4 flex items-center justify-between ${
-                cramResults.length > 0
-                  ? "border-available/30 bg-available/5"
-                  : "border-booked/30 bg-booked/5"
-              }`}>
-                <div className="flex items-center gap-3">
-                  {cramResults.length > 0 ? (
-                    <div className="w-8 h-8 rounded-lg bg-available/15 text-available flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-booked/15 text-booked flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {cramResults.length > 0
-                        ? `${cramResults.length} slot${cramResults.length > 1 ? "s" : ""} available`
-                        : "No matching slots found"}
-                    </p>
-                    <p className="text-xs text-muted">
-                      {cramDateDisplay} · {formatDurationLong(cramPrefs.sessionDuration)}
-                      {cramPrefs.groupSize > 1 ? ` · ${cramPrefs.groupSize}+ seats` : ""}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setCramStep("setup")}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-muted hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                >
-                  Edit
-                </button>
-              </div>
-
-              {/* Results list */}
-              {cramResults.length > 0 ? (
-                <div className="space-y-2">
-                  {cramResults.map((block) => (
-                    <CramResultRow key={`${block.room.id}-${block.startTime}`} block={block} />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark p-8 text-center space-y-3">
-                  <p className="text-xs text-muted max-w-xs mx-auto">Try a different date, shorter duration, or a different building.</p>
-                  <button
-                    onClick={() => setCramStep("setup")}
-                    className="px-4 py-2.5 rounded-lg text-xs font-medium bg-accent text-primary hover:bg-accent-hover transition-colors cursor-pointer"
-                  >
-                    Adjust preferences
-                  </button>
-                </div>
-              )}
-
-              {cramResults.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setCramStep("setup")}
-                    className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-muted hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                  >
-                    Change criteria
-                  </button>
-                  <button
-                    onClick={runCramSearch}
-                    className="flex-1 py-2.5 rounded-xl bg-accent text-primary text-sm font-bold hover:bg-accent-hover transition-colors cursor-pointer"
-                  >
-                    Refresh
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
       <footer className="border-t border-slate-200 dark:border-slate-700 py-4 mt-auto">
         <div className="max-w-2xl mx-auto px-4 text-xs text-muted text-center">
           Recommendations are based on real-time availability. Book quickly — slots fill up fast.
@@ -1286,7 +948,7 @@ function ResultCard({ block, index }: { block: CandidateBlock; index: number }) 
             <span className="text-xs text-muted ml-2">{formatDuration(block.durationMins)}</span>
           </div>
           <a
-            href={bookingUrl(block.room.id)}
+            href={bookingUrl(block.room.id, { start: block.startTime, end: block.endTime, roomName: block.room.name })}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3.5 py-1.5 min-h-[36px] rounded-lg bg-available text-white text-xs font-semibold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center"
@@ -1330,54 +992,3 @@ function ResultCard({ block, index }: { block: CandidateBlock; index: number }) 
   );
 }
 
-// ── Cram Result Row ──
-
-function CramResultRow({ block }: { block: CandidateBlock }) {
-  const loc = LOCATIONS.find((l) => l.id === block.room.locationId);
-  const { isFavorite } = useFavorites();
-  const faved = isFavorite(block.room.id);
-
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark overflow-hidden hover:border-available/30 transition-colors">
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Time block */}
-        <div className="shrink-0 text-center min-w-[72px]">
-          <p className="text-sm font-bold text-foreground tabular-nums">{formatTime(block.startTime)}</p>
-          <p className="text-[10px] text-muted tabular-nums">{formatTime(block.endTime)}</p>
-        </div>
-
-        <div className="w-px h-10 bg-slate-200 dark:bg-slate-700 shrink-0" />
-
-        {/* Room info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <Link
-              href={`/room/${block.room.id}?date=${block.date}`}
-              className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
-            >
-              {block.room.name}
-            </Link>
-            {faved && (
-              <svg className="w-3 h-3 text-accent shrink-0" viewBox="0 0 24 24" fill="currentColor" strokeWidth={0}>
-                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-              </svg>
-            )}
-          </div>
-          <p className="text-[11px] text-muted truncate">
-            {loc?.shortName} · {block.room.floor} Floor · {block.room.capacity} seats · {formatDuration(block.durationMins)}
-          </p>
-        </div>
-
-        {/* Book button */}
-        <a
-          href={bookingUrl(block.room.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-4 py-2 min-h-[36px] rounded-xl bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
-        >
-          Book
-        </a>
-      </div>
-    </div>
-  );
-}

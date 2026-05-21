@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { LOCATIONS, ROOMS, getFloorsForSelection, getRoomsForSelection } from "../lib/rooms";
 import { homePageUrl } from "../lib/booking-url";
 import { useFavorites } from "../lib/favorites";
 import QuickStats from "./QuickStats";
 import RoomCards from "./RoomCards";
 import TimeGrid, { SlotData } from "./TimeGrid";
+import CramSession from "./CramSession";
 
 type ViewMode = "cards" | "grid";
 type SortMode = "availability" | "name" | "capacity";
@@ -25,7 +27,7 @@ const CAPACITY_OPTIONS = [
 
 function todayStr(): string {
   const d = new Date();
-  return d.toISOString().split("T")[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function tomorrowStr(dateStr: string): string {
@@ -49,13 +51,37 @@ function formatDateYear(dateStr: string): string {
 }
 
 export default function BookingDashboard() {
-  const [date, setDate] = useState(todayStr);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const initialDate = searchParams.get("date") || todayStr();
+  const initialView = (searchParams.get("view") === "grid" ? "grid" : "cards") as ViewMode;
+
+  const [date, setDateState] = useState(initialDate);
   const [locationId, setLocationId] = useState(LOCATIONS[0].id);
   const [groupId, setGroupId] = useState(LOCATIONS[0].groups[0].id);
   const [slots, setSlots] = useState<SlotData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [viewMode, setViewModeState] = useState<ViewMode>(initialView);
+
+  const updateUrl = useCallback((newDate: string, newView: ViewMode) => {
+    const params = new URLSearchParams();
+    if (newDate !== todayStr()) params.set("date", newDate);
+    if (newView !== "cards") params.set("view", newView);
+    const qs = params.toString();
+    router.push(qs ? `/?${qs}` : "/", { scroll: false });
+  }, [router]);
+
+  const setDate = useCallback((d: string) => {
+    setDateState(d);
+    updateUrl(d, viewMode);
+  }, [updateUrl, viewMode]);
+
+  const setViewMode = useCallback((v: ViewMode) => {
+    setViewModeState(v);
+    updateUrl(date, v);
+  }, [updateUrl, date]);
   const [selectedFloors, setSelectedFloors] = useState<string[]>([]);
   const [minCapacity, setMinCapacity] = useState(0);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
@@ -303,8 +329,11 @@ export default function BookingDashboard() {
               {!isToday && (
                 <button
                   onClick={goToday}
-                  className="px-3 py-2 rounded-xl text-xs font-bold text-primary bg-accent/10 hover:bg-accent/20 border border-accent/25 hover:border-accent/40 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-card bg-primary hover:bg-primary/90 shadow-sm hover:shadow transition-all cursor-pointer"
                 >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                  </svg>
                   Today
                 </button>
               )}
@@ -320,9 +349,16 @@ export default function BookingDashboard() {
           </div>
         </div>
 
+        {/* ── Quick Book ── */}
+        {!loading && !error && (
+          <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+            <CramSession initialDate={date} />
+          </div>
+        )}
+
         {/* ── Quick Stats ── */}
         {!loading && !error && slots.length > 0 && (
-          <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+          <div className="animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
             <QuickStats slots={slots} rooms={rooms} today={todayStr()} date={date} />
           </div>
         )}

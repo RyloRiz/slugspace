@@ -38,6 +38,32 @@ export async function GET(request: NextRequest) {
       }
 
       destination = `${UCSC_BASE}/space/${id}#eq-time-grid`;
+      const hourParam = params.get("hour");
+      const roomNumber = params.get("roomNumber");
+      if (hourParam !== null) {
+        const hour = parseInt(hourParam);
+        const fmt = (h: number) => {
+          const ampm = h >= 12 ? "pm" : "am";
+          const d = h > 12 ? h - 12 : h === 0 ? 12 : h;
+          return `${d}%3A00${ampm}`;
+        };
+        const target = fmt(hour);
+        let prefix: string;
+        let suffix: string;
+        if (hour === 0) {
+          // 12:00am — first hour, "Space" precedes it on the page
+          prefix = "Space";
+          suffix = fmt(1);
+        } else if (hour === 23) {
+          // 11:00pm — last hour, room info follows it on the page
+          prefix = fmt(22);
+          suffix = `Room%20${roomNumber}%20(Capacity`;
+        } else {
+          prefix = fmt(hour - 1);
+          suffix = fmt(hour + 1);
+        }
+        destination += `:~:text=${prefix}-,${target},-${suffix}`;
+      }
       break;
     }
 
