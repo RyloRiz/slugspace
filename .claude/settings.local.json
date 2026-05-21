@@ -11,7 +11,31 @@
       "Bash(curl -s http://localhost:3000)",
       "Bash(python3 -c \" import json, sys data = json.loads\\(sys.stdin.read\\(\\)\\) slots = data.get\\('slots', []\\) print\\(f'Slots returned for June 15: {len\\(slots\\)}'\\) if slots: print\\('First slot:', json.dumps\\(slots[0]\\)\\) \")",
       "Bash(python3:*)",
-      "WebFetch(domain:communications.ucsc.edu)"
+      "WebFetch(domain:communications.ucsc.edu)",
+      "WebSearch",
+      "WebFetch(domain:library.ucsc.edu)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:guides.library.ucsc.edu)",
+      "WebFetch(domain:news.ucsc.edu)",
+      "WebFetch(domain:campusvisitorguides.com)",
+      "Bash(curl -sI \"https://library.ucsc.edu/sites/default/files/imagecache/1-original-size/images/RedwoodRoomEHM.jpg\")",
+      "Bash(curl -sI \"https://library.ucsc.edu/sites/default/files/imagecache/1-original-size/images/aerial%20view%20students%20studying_0.jpg\")",
+      "Bash(curl -sI \"https://upload.wikimedia.org/wikipedia/commons/3/35/UCSC_McHenry_Library.jpg\")",
+      "Bash(curl -sI \"https://d2jv02qf7xgjwx.cloudfront.net/accounts/340532/images/se_hero.png\")",
+      "Bash(curl -sI \"https://libapps.s3.amazonaws.com/accounts/340532/images/mc_hero.png\")",
+      "Bash(curl -sI \"https://campusvisitorguides.com/uc-santa-cruz/wp-content/uploads/sites/47/2025/07/SE-Library.jpeg\")",
+      "Bash(curl -sI \"https://campusvisitorguides.com/uc-santa-cruz/wp-content/uploads/sites/47/2025/07/20191021-campus-life-NEG-359-scaled.jpg\")",
+      "Bash(curl -sI \"https://campusvisitorguides.com/uc-santa-cruz/wp-content/uploads/sites/47/2025/07/20181030-093156-scaled.jpg\")",
+      "Bash(curl -sI \"https://library.ucsc.edu/sites/default/files/S%26E%20reno.png\")",
+      "Bash(curl -sL -o mchenry-hero.png \"https://libapps.s3.amazonaws.com/accounts/340532/images/mc_hero.png\")",
+      "Bash(curl -sL -o se-hero.png \"https://d2jv02qf7xgjwx.cloudfront.net/accounts/340532/images/se_hero.png\")",
+      "Bash(curl -sL -o mchenry-interior.jpg \"https://campusvisitorguides.com/uc-santa-cruz/wp-content/uploads/sites/47/2025/07/20181030-093156-scaled.jpg\")",
+      "Bash(curl -sL -o se-exterior.jpeg \"https://campusvisitorguides.com/uc-santa-cruz/wp-content/uploads/sites/47/2025/07/SE-Library.jpeg\")",
+      "WebFetch(domain:magicui.design)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api:*)",
+      "Bash(gh search:*)"
     ]
   }
 }

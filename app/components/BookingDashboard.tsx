@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { LOCATIONS, ROOMS, getFloorsForSelection, getRoomsForSelection } from "../lib/rooms";
 import { homePageUrl } from "../lib/booking-url";
@@ -15,6 +16,11 @@ type ViewMode = "cards" | "grid";
 type SortMode = "availability" | "name" | "capacity";
 
 const FLOOR_ORDER: Record<string, number> = { "Lower": 0, "Ground": 1, "1st": 2, "2nd": 3, "3rd": 4, "4th": 5 };
+
+const LIBRARY_IMAGES: Record<number, { hero: string; alt: string }> = {
+  16578: { hero: "/libraries/se-hero.png", alt: "Science & Engineering Library" },
+  16577: { hero: "/libraries/mchenry-hero.png", alt: "McHenry Library" },
+};
 const CAPACITY_OPTIONS = [
   { value: 0, label: "Any" },
   { value: 2, label: "2+" },
@@ -260,95 +266,112 @@ export default function BookingDashboard() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 py-8 space-y-8">
-        {/* ── Date Hero + Group Tabs ── */}
-        <div className="space-y-5 animate-fade-in-up">
-          {/* Group tabs */}
-          {currentLocation.groups.length > 1 && (
-            <div className="flex gap-1 p-0.5 rounded-xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark w-fit">
-              {currentLocation.groups.map((group) => (
+      {/* ── Library Hero Banner ── */}
+      <div className="relative h-48 sm:h-56 overflow-hidden">
+        <Image
+          src={LIBRARY_IMAGES[locationId]?.hero || LIBRARY_IMAGES[16578].hero}
+          alt={LIBRARY_IMAGES[locationId]?.alt || "Library"}
+          fill
+          className="object-cover object-center"
+          priority
+          sizes="100vw"
+        />
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-primary/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+
+        {/* Content overlay — date hero + group tabs */}
+        <div className="absolute inset-0 flex items-end">
+          <div className="max-w-6xl w-full mx-auto px-5 pb-6 space-y-4">
+            {/* Group tabs */}
+            {currentLocation.groups.length > 1 && (
+              <div className="flex gap-1 p-0.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 w-fit">
+                {currentLocation.groups.map((group) => (
+                  <button
+                    key={group.id}
+                    onClick={() => { setGroupId(group.id); setSelectedFloors([]); setSelectedFeatures([]); setSearch(""); }}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      groupId === group.id
+                        ? "bg-white/90 text-primary shadow-sm"
+                        : "text-white/80 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {group.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Date Navigation */}
+            <div className="flex items-end gap-4">
+              <div className="flex-1">
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={date}
+                  min={todayStr()}
+                  onChange={(e) => {
+                    if (e.target.value >= todayStr()) setDate(e.target.value);
+                  }}
+                  className="sr-only"
+                />
                 <button
-                  key={group.id}
-                  onClick={() => { setGroupId(group.id); setSelectedFloors([]); setSelectedFeatures([]); setSearch(""); }}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    groupId === group.id
-                      ? "bg-card dark:bg-card-dark text-foreground shadow-sm"
-                      : "text-muted hover:text-foreground"
+                  type="button"
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  className="text-left cursor-pointer group"
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1.5 text-white/60">
+                    {isToday ? "Today" : "Viewing"}
+                  </p>
+                  <h2
+                    className="text-3xl sm:text-4xl text-white leading-none drop-shadow-sm group-hover:text-accent transition-colors"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {formatDateDisplay(date)}
+                  </h2>
+                  <p className="text-sm text-white/50 mt-1">{formatDateYear(date)}</p>
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 pb-1">
+                <button
+                  onClick={goPrev}
+                  disabled={!canGoPrev}
+                  className={`p-2 rounded-xl transition-all ${
+                    canGoPrev
+                      ? "hover:bg-white/15 cursor-pointer text-white border border-transparent hover:border-white/20"
+                      : "opacity-20 cursor-not-allowed text-white/40"
                   }`}
                 >
-                  {group.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Date Navigation — Big editorial style */}
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
-              <input
-                ref={dateInputRef}
-                type="date"
-                value={date}
-                min={todayStr()}
-                onChange={(e) => {
-                  if (e.target.value >= todayStr()) setDate(e.target.value);
-                }}
-                className="sr-only"
-              />
-              <button
-                type="button"
-                onClick={() => dateInputRef.current?.showPicker()}
-                className="text-left cursor-pointer group"
-              >
-                <p className="text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">
-                  {isToday ? "Today" : "Viewing"}
-                </p>
-                <h2
-                  className="text-3xl sm:text-4xl text-foreground leading-none group-hover:text-primary transition-colors"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {formatDateDisplay(date)}
-                </h2>
-                <p className="text-sm text-muted mt-1">{formatDateYear(date)}</p>
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5 pb-1">
-              <button
-                onClick={goPrev}
-                disabled={!canGoPrev}
-                className={`p-2 rounded-xl transition-all ${
-                  canGoPrev
-                    ? "hover:bg-surface dark:hover:bg-surface-dark cursor-pointer text-foreground border border-transparent hover:border-border dark:hover:border-border-dark"
-                    : "opacity-20 cursor-not-allowed"
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-              </button>
-              {!isToday && (
-                <button
-                  onClick={goToday}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-card bg-primary hover:bg-primary/90 shadow-sm hover:shadow transition-all cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                   </svg>
-                  Today
                 </button>
-              )}
-              <button
-                onClick={goNext}
-                className="p-2 rounded-xl hover:bg-surface dark:hover:bg-surface-dark border border-transparent hover:border-border dark:hover:border-border-dark transition-all cursor-pointer text-foreground"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </button>
+                {!isToday && (
+                  <button
+                    onClick={goToday}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-primary bg-white hover:bg-white/90 shadow-sm hover:shadow transition-all cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                    </svg>
+                    Today
+                  </button>
+                )}
+                <button
+                  onClick={goNext}
+                  className="p-2 rounded-xl hover:bg-white/15 border border-transparent hover:border-white/20 transition-all cursor-pointer text-white"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
+      <main className="flex-1 max-w-6xl w-full mx-auto px-5 py-8 space-y-8">
         {/* ── Quick Book ── */}
         {!loading && !error && (
           <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
@@ -426,7 +449,7 @@ export default function BookingDashboard() {
               onClick={() => setFiltersOpen(!filtersOpen)}
               className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                 filtersOpen || advancedFilterCount > 0
-                  ? "bg-primary/5 text-primary border-primary/15"
+                  ? "bg-primary/5 text-primary dark:text-secondary border-primary/15 dark:border-secondary/15"
                   : "text-muted hover:text-foreground border-transparent hover:bg-surface dark:hover:bg-surface-dark"
               }`}
             >
@@ -559,7 +582,7 @@ export default function BookingDashboard() {
                 <span className="text-xs text-muted">{activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} active</span>
                 <button
                   onClick={clearAllFilters}
-                  className="text-xs text-primary hover:underline cursor-pointer font-semibold"
+                  className="text-xs text-primary dark:text-secondary hover:underline cursor-pointer font-semibold"
                 >
                   Clear all
                 </button>
@@ -572,13 +595,13 @@ export default function BookingDashboard() {
         {!filtersOpen && advancedFilterCount > 0 && (
           <div className="flex items-center gap-2 flex-wrap -mt-3">
             {selectedFloors.map((f) => (
-              <button key={f} onClick={() => toggleFloor(f)} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/8 text-primary cursor-pointer hover:bg-primary/12 transition-colors border border-primary/10">
+              <button key={f} onClick={() => toggleFloor(f)} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/8 text-primary dark:text-secondary cursor-pointer hover:bg-primary/12 transition-colors border border-primary/10 dark:border-secondary/10">
                 {f}
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             ))}
             {minCapacity > 0 && (
-              <button onClick={() => setMinCapacity(0)} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/8 text-primary cursor-pointer hover:bg-primary/12 transition-colors border border-primary/10">
+              <button onClick={() => setMinCapacity(0)} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/8 text-primary dark:text-secondary cursor-pointer hover:bg-primary/12 transition-colors border border-primary/10 dark:border-secondary/10">
                 {minCapacity}+ seats
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
@@ -670,13 +693,13 @@ export default function BookingDashboard() {
                 filter={{ floors: selectedFloors, minCapacity, onlyAvailable, onlyFavorites, features: selectedFeatures, search, sort }}
               />
             ) : (
-              <TimeGrid slots={slots} rooms={rooms} date={date} today={todayStr()} />
+              <TimeGrid slots={slots} rooms={rooms} date={date} today={todayStr()} filter={{ floors: selectedFloors, minCapacity, onlyAvailable, onlyFavorites, features: selectedFeatures, search, sort }} />
             )}
           </div>
         )}
 
-        {/* Legend */}
-        {!loading && !error && slots.length > 0 && (
+        {/* Legend — only for cards view (TimeGrid has its own) */}
+        {!loading && !error && slots.length > 0 && viewMode === "cards" && (
           <div className="flex items-center gap-5 py-3 text-xs text-muted">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-md bg-available/15 border border-available/30" />
@@ -698,18 +721,25 @@ export default function BookingDashboard() {
         {!loading && !error && (
           <Link
             href="/planner"
-            className="group flex items-center gap-5 rounded-2xl border border-primary/10 bg-primary/3 hover:bg-primary/5 p-5 transition-all cursor-pointer hover:shadow-md hover:shadow-primary/5"
+            className="group relative flex items-center gap-5 rounded-2xl overflow-hidden p-6 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10"
           >
-            <div className="w-12 h-12 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
-              <svg className="w-6 h-6 text-accent-hover" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <Image
+              src="/libraries/se-exterior.jpeg"
+              alt=""
+              fill
+              className="object-cover object-center brightness-[0.35] group-hover:brightness-[0.3] group-hover:scale-105 transition-all duration-500"
+              sizes="(max-width: 1152px) 100vw, 1152px"
+            />
+            <div className="relative z-10 w-12 h-12 rounded-2xl bg-accent/25 backdrop-blur-sm flex items-center justify-center shrink-0 group-hover:bg-accent/35 transition-colors">
+              <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
               </svg>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>Plan your weekly study schedule</p>
-              <p className="text-xs text-muted mt-0.5">Tell us when and how you study — we&apos;ll find the best rooms and times.</p>
+            <div className="relative z-10 flex-1 min-w-0">
+              <p className="text-sm font-bold text-white" style={{ fontFamily: "var(--font-display)" }}>Plan your weekly study schedule</p>
+              <p className="text-xs text-white/60 mt-0.5">Tell us when and how you study — we&apos;ll find the best rooms and times.</p>
             </div>
-            <svg className="w-5 h-5 text-muted group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className="relative z-10 w-5 h-5 text-white/50 group-hover:text-accent group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
           </Link>
@@ -717,18 +747,42 @@ export default function BookingDashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border dark:border-border-dark py-6 mt-auto">
-        <div className="max-w-6xl mx-auto px-5 text-xs text-muted/60 text-center">
-          Data sourced from{" "}
-          <a
-            href={homePageUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline cursor-pointer"
-          >
-            UCSC Library Room Reservations
-          </a>
-          . Not affiliated with UC Santa Cruz.
+      <footer className="relative mt-auto overflow-hidden">
+        <div className="relative h-32 sm:h-40">
+          <Image
+            src="/libraries/mchenry-interior.jpg"
+            alt="McHenry Library interior"
+            fill
+            className="object-cover object-center"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-primary/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/40 to-primary/80" />
+          <div className="absolute inset-0 flex items-end">
+            <div className="w-full py-4">
+              <p className="text-center text-xs text-white/50">
+                Data sourced from{" "}
+                <a
+                  href={homePageUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/70 hover:text-white hover:underline cursor-pointer transition-colors"
+                >
+                  UCSC Library Room Reservations
+                </a>
+                . Not affiliated with UC Santa Cruz. Built by&nbsp;
+				<a
+                  href={'https://rizwaan.dev'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/70 hover:text-white hover:underline cursor-pointer transition-colors"
+                >
+                  Rizwaan Bana
+                </a>
+				.
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

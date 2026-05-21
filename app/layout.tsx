@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Young_Serif, Figtree } from "next/font/google";
+import { PageTransition } from "./components/ui/page-transition";
 import "./globals.css";
 
 const youngSerif = Young_Serif({
@@ -29,7 +30,7 @@ export default function RootLayout({
       className={`${youngSerif.variable} ${figtree.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </body>
     </html>
   );

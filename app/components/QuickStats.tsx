@@ -87,7 +87,7 @@ export default function QuickStats({ slots, rooms, today, date }: QuickStatsProp
         {soonestRoom && soonest ? (
           <Link href={`/room/${soonestRoom.id}?date=${date}`} className="block cursor-pointer group">
             <span
-              className="text-2xl sm:text-3xl text-primary-light group-hover:text-primary transition-colors tabular-nums"
+              className="text-2xl sm:text-3xl text-primary-light dark:text-secondary group-hover:text-primary dark:group-hover:text-secondary transition-colors tabular-nums"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {formatTimeShort(soonest.start)}

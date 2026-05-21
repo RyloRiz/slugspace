@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LOCATIONS, ROOMS } from "../lib/rooms";
 import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 import { bookingUrl } from "../lib/booking-url";
+import BookLink from "./BookLink";
 import { useFavorites } from "../lib/favorites";
 import {
   CandidateBlock,
@@ -100,16 +101,12 @@ export default function CramSession({ initialDate }: CramSessionProps) {
       const end = tomorrowStr(cramPrefs.date);
 
       const groupsToFetch: { lid: number; gid: number }[] = [];
-      if (cramPrefs.locationPreference === "any") {
-        for (const loc of LOCATIONS) {
-          for (const group of loc.groups) {
-            groupsToFetch.push({ lid: loc.id, gid: group.id });
-          }
-        }
-      } else {
-        const loc = LOCATIONS.find((l) => l.id === cramPrefs.locationPreference);
-        if (loc) {
-          for (const group of loc.groups) {
+      const locs = cramPrefs.locationPreference === "any"
+        ? LOCATIONS
+        : LOCATIONS.filter((l) => l.id === cramPrefs.locationPreference);
+      for (const loc of locs) {
+        for (const group of loc.groups) {
+          if (group.name === "Study Rooms") {
             groupsToFetch.push({ lid: loc.id, gid: group.id });
           }
         }
@@ -224,7 +221,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                 {!isCramToday && (
                   <button
                     onClick={() => setCramPrefs((p) => ({ ...p, date: todayStr() }))}
-                    className="px-2 py-2 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer"
+                    className="px-2 py-2 rounded-lg text-[11px] font-semibold text-primary dark:text-secondary hover:bg-primary/5 transition-colors cursor-pointer"
                   >
                     Today
                   </button>
@@ -352,7 +349,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={runCramSearch}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-primary dark:text-secondary hover:bg-primary/5 transition-colors cursor-pointer"
               >
                 Refresh
               </button>
@@ -397,14 +394,14 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                         {loc?.shortName} · {block.room.floor} Floor · {block.room.capacity} seats · {formatDuration(block.durationMins)}
                       </p>
                     </div>
-                    <a
+                    <BookLink
                       href={bookingUrl(block.room.id, { start: block.startTime, end: block.endTime, roomName: block.room.name })}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      slotDate={cramPrefs.date}
+                      today={todayStr()}
                       className="px-3.5 py-1.5 rounded-lg bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
                     >
                       Book
-                    </a>
+                    </BookLink>
                   </div>
                 );
               })}

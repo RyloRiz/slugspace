@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Room } from "../lib/rooms";
 import { bookingUrl } from "../lib/booking-url";
+import { BookingDateModal } from "./BookLink";
+import { useFavorites } from "../lib/favorites";
 import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 
 export interface SlotData {
@@ -14,11 +16,22 @@ export interface SlotData {
   className?: string;
 }
 
+interface TimeGridFilter {
+  floors: string[];
+  minCapacity: number;
+  onlyAvailable: boolean;
+  onlyFavorites: boolean;
+  features: string[];
+  search: string;
+  sort: "availability" | "name" | "capacity";
+}
+
 interface TimeGridProps {
   slots: SlotData[];
   rooms: Room[];
   date: string;
   today: string;
+  filter?: TimeGridFilter;
 }
 
 function parseTime(datetime: string): { hour: number; min: number } {
@@ -66,9 +79,12 @@ interface ProcessedSlot {
   slot: SlotData | undefined;
 }
 
-export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
+export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGridProps) {
   const [hoveredRoom, setHoveredRoom] = useState<number | null>(null);
   const [hoveredSlotIdx, setHoveredSlotIdx] = useState<number | null>(null);
+  const [modalHref, setModalHref] = useState<string | null>(null);
+  const isToday = date === today;
+  const { isFavorite } = useFavorites();
 
   const timeSlots = useMemo(() => getTimeSlots(slots), [slots]);
   const nowPos = useMemo(() => getNowPosition(timeSlots, today, date), [timeSlots, today, date]);
@@ -80,7 +96,16 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
   }, [slots]);
 
   const roomData = useMemo(() => {
-    return rooms.map((room) => {
+    let filtered = rooms;
+    if (filter) {
+      if (filter.floors.length > 0) filtered = filtered.filter((r) => filter.floors.includes(r.floor));
+      if (filter.minCapacity > 0) filtered = filtered.filter((r) => r.capacity >= filter.minCapacity);
+      if (filter.features.length > 0) filtered = filtered.filter((r) => filter.features.every((f) => r.features.includes(f)));
+      if (filter.search) { const q = filter.search.toLowerCase(); filtered = filtered.filter((r) => r.name.toLowerCase().includes(q)); }
+      if (filter.onlyFavorites) filtered = filtered.filter((r) => isFavorite(r.id));
+    }
+
+    const data = filtered.map((room) => {
       const processed: ProcessedSlot[] = timeSlots.map((time) => {
         const slot = slotMap.get(`${room.id}-${time}`);
         let state: SlotState = "booked";
@@ -97,8 +122,25 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
       const future = processed.filter((s) => s.state !== "past").length;
 
       return { room, slots: processed, bookable, future };
-    }).sort((a, b) => b.bookable - a.bookable);
-  }, [rooms, timeSlots, slotMap, today]);
+    });
+
+    if (filter?.onlyAvailable) data.splice(0, data.length, ...data.filter((r) => r.bookable > 0));
+
+    // Sort
+    const sortMode = filter?.sort ?? "availability";
+    if (sortMode === "availability") data.sort((a, b) => b.bookable - a.bookable);
+    else if (sortMode === "name") data.sort((a, b) => a.room.name.localeCompare(b.room.name));
+    else if (sortMode === "capacity") data.sort((a, b) => b.room.capacity - a.room.capacity);
+
+    // Favorites first
+    data.sort((a, b) => {
+      const aFav = isFavorite(a.room.id) ? 0 : 1;
+      const bFav = isFavorite(b.room.id) ? 0 : 1;
+      return aFav - bFav;
+    });
+
+    return data;
+  }, [rooms, timeSlots, slotMap, today, filter, isFavorite]);
 
   const hourMarkers = useMemo(() => {
     const markers: { idx: number; label: string }[] = [];
@@ -118,6 +160,15 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
     );
   }
 
+  if (roomData.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-12 text-center space-y-2">
+        <p className="text-sm font-semibold text-foreground">No rooms match your filters</p>
+        <p className="text-sm text-muted">Try adjusting your filters to see more results.</p>
+      </div>
+    );
+  }
+
   const hoveredInfo = hoveredRoom !== null && hoveredSlotIdx !== null
     ? (() => {
         const rd = roomData.find((r) => r.room.id === hoveredRoom);
@@ -131,6 +182,35 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
   return (
     <div>
       <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark overflow-hidden shadow-sm">
+        {/* Hover detail strip */}
+        <div className="h-11 border-b border-border dark:border-border-dark bg-surface dark:bg-surface-dark flex items-center justify-center px-4 overflow-hidden">
+          {hoveredInfo ? (
+            <div className="flex items-center gap-3 animate-in fade-in duration-100">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${
+                hoveredInfo.state === "available" ? "bg-available" :
+                hoveredInfo.state === "booked" ? "bg-booked" : "bg-muted/40"
+              }`} />
+              <span className="text-sm font-semibold text-foreground truncate">{hoveredInfo.room.name}</span>
+              {hoveredInfo.slot && (
+                <span className="text-sm text-muted hidden sm:inline tabular-nums">
+                  {formatTimeFull(hoveredInfo.slot.start)} – {formatTimeFull(hoveredInfo.slot.end)}
+                </span>
+              )}
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
+                hoveredInfo.state === "available"
+                  ? "bg-available/10 text-available"
+                  : hoveredInfo.state === "booked"
+                    ? "bg-booked/10 text-booked"
+                    : "bg-surface dark:bg-surface-dark text-muted border border-border dark:border-border-dark"
+              }`}>
+                {hoveredInfo.state === "available" ? "Click to book" : hoveredInfo.state === "booked" ? "Booked" : "Past"}
+              </span>
+            </div>
+          ) : (
+            <span className="text-[11px] text-muted/50">Hover over a time slot for details</span>
+          )}
+        </div>
+
         <div className="overflow-x-auto">
           {/* Time axis header */}
           <div className="flex border-b border-border dark:border-border-dark">
@@ -245,12 +325,14 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
                   };
 
                   if (state === "available" && slot) {
+                    const href = bookingUrl(room.id, { start: slot.start, end: slot.end, roomName: room.name });
                     return (
                       <a
                         key={time}
-                        href={bookingUrl(room.id, { start: slot.start, end: slot.end, roomName: room.name })}
+                        href={href}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={!isToday ? (e) => { e.preventDefault(); setModalHref(href); } : undefined}
                         {...cellProps}
                       />
                     );
@@ -270,35 +352,6 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Hover detail strip */}
-        <div className="h-11 border-t border-border dark:border-border-dark bg-surface dark:bg-surface-dark flex items-center justify-center px-4 overflow-hidden">
-          {hoveredInfo ? (
-            <div className="flex items-center gap-3 animate-in fade-in duration-100">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${
-                hoveredInfo.state === "available" ? "bg-available" :
-                hoveredInfo.state === "booked" ? "bg-booked" : "bg-muted/40"
-              }`} />
-              <span className="text-sm font-semibold text-foreground truncate">{hoveredInfo.room.name}</span>
-              {hoveredInfo.slot && (
-                <span className="text-sm text-muted hidden sm:inline tabular-nums">
-                  {formatTimeFull(hoveredInfo.slot.start)} – {formatTimeFull(hoveredInfo.slot.end)}
-                </span>
-              )}
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                hoveredInfo.state === "available"
-                  ? "bg-available/10 text-available"
-                  : hoveredInfo.state === "booked"
-                    ? "bg-booked/10 text-booked"
-                    : "bg-surface dark:bg-surface-dark text-muted border border-border dark:border-border-dark"
-              }`}>
-                {hoveredInfo.state === "available" ? "Click to book" : hoveredInfo.state === "booked" ? "Booked" : "Past"}
-              </span>
-            </div>
-          ) : (
-            <span className="text-[11px] text-muted/50">Hover over a time slot for details</span>
-          )}
         </div>
 
         {/* Legend footer */}
@@ -323,6 +376,13 @@ export default function TimeGrid({ slots, rooms, date, today }: TimeGridProps) {
           )}
         </div>
       </div>
+
+      <BookingDateModal
+        open={modalHref !== null}
+        onClose={() => setModalHref(null)}
+        href={modalHref ?? ""}
+        slotDate={date}
+      />
     </div>
   );
 }
