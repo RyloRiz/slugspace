@@ -121,7 +121,7 @@ function HistoryRow({ record, today, onRemove }: { record: BookingRecord; today:
   const locationName = getLocationShortName(record.locationId);
 
   return (
-    <div className={`px-5 py-3.5 flex items-center gap-3 ${isPast ? "opacity-60" : ""}`}>
+    <div className={`px-4 sm:px-5 py-4 sm:py-3.5 flex items-center gap-3 ${isPast ? "opacity-60" : ""}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <Link
@@ -146,7 +146,7 @@ function HistoryRow({ record, today, onRemove }: { record: BookingRecord; today:
         {room && (
           <Link
             href={`/room/${record.roomId}?date=${rebookDate}`}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-primary dark:text-secondary bg-primary/5 dark:bg-secondary/5 hover:bg-primary/10 dark:hover:bg-secondary/10 border border-primary/10 dark:border-secondary/10 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-bold text-primary dark:text-secondary bg-primary/5 dark:bg-secondary/5 hover:bg-primary/10 dark:hover:bg-secondary/10 border border-primary/10 dark:border-secondary/10 transition-colors cursor-pointer"
             title={`View room for ${formatDateShort(rebookDate)}`}
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -158,7 +158,7 @@ function HistoryRow({ record, today, onRemove }: { record: BookingRecord; today:
         {/* Remove */}
         <button
           onClick={() => onRemove(record.id)}
-          className="p-1.5 rounded-lg text-muted/30 hover:text-booked hover:bg-booked/5 transition-colors cursor-pointer"
+          className="p-2.5 rounded-lg text-muted/30 hover:text-booked hover:bg-booked/5 transition-colors cursor-pointer"
           title="Remove from history"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

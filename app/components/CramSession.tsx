@@ -75,6 +75,9 @@ interface CramSessionProps {
 
 export default function CramSession({ initialDate }: CramSessionProps) {
   const { ids: favoriteIds, isFavorite } = useFavorites();
+  const [collapsed, setCollapsed] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 640 : false
+  );
   const [cramStep, setCramStep] = useState<CramStep>("setup");
   const [cramPrefs, setCramPrefs] = useState<CramPreferences>({
     date: initialDate || todayStr(),
@@ -166,8 +169,36 @@ export default function CramSession({ initialDate }: CramSessionProps) {
 
   return (
     <div className="rounded-2xl border border-accent/20 bg-accent/3 overflow-hidden">
-      {cramError && (
-        <div className="border-b border-booked/20 bg-booked/5 px-6 sm:px-8 py-3 text-sm text-booked flex items-center gap-3" role="alert">
+      {/* Header — always visible, toggles collapse */}
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        className="w-full flex items-center justify-between px-6 sm:px-8 py-3.5 cursor-pointer hover:bg-accent/5 transition-colors"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+          <div className="text-left">
+            <h2 className="text-sm font-bold text-foreground leading-tight">Quick Book</h2>
+            <p className="text-[11px] text-muted">Find a room right now</p>
+          </div>
+        </div>
+        <svg
+          className={`w-4 h-4 text-muted transition-transform duration-200 ${collapsed ? "" : "rotate-180"}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {cramError && !collapsed && (
+        <div className="border-t border-booked/20 bg-booked/5 px-6 sm:px-8 py-3 text-sm text-booked flex items-center gap-3" role="alert">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
@@ -175,25 +206,12 @@ export default function CramSession({ initialDate }: CramSessionProps) {
         </div>
       )}
 
-      {cramStep === "setup" && (
-        <div className="px-6 sm:px-8 py-4">
-          {/* Title row */}
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground leading-tight">Quick Book</h2>
-              <p className="text-[11px] text-muted">Find a room right now</p>
-            </div>
-          </div>
-
-          {/* Compact inline form */}
-          <div className="flex flex-wrap items-end gap-3">
+      {!collapsed && cramStep === "setup" && (
+        <div className="px-6 sm:px-8 pb-4 pt-1">
+          {/* Form — stacked on mobile, inline on desktop */}
+          <div className="space-y-4 sm:space-y-0 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
             {/* Date */}
-            <div className="space-y-1">
+            <div className="space-y-1.5 sm:space-y-1">
               <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">When</label>
               <div className="flex items-center gap-1.5">
                 <input
@@ -209,7 +227,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                 <button
                   type="button"
                   onClick={() => cramDateInputRef.current?.showPicker()}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border dark:border-border-dark bg-card dark:bg-card-dark text-sm font-semibold text-foreground hover:border-foreground/20 transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2.5 sm:py-2 rounded-lg border border-border dark:border-border-dark bg-card dark:bg-card-dark text-sm font-semibold text-foreground hover:border-foreground/20 transition-colors cursor-pointer"
                 >
                   <svg className="w-3.5 h-3.5 text-muted shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
@@ -231,14 +249,14 @@ export default function CramSession({ initialDate }: CramSessionProps) {
             </div>
 
             {/* Duration */}
-            <div className="space-y-1">
+            <div className="space-y-1.5 sm:space-y-1">
               <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Duration</label>
-              <div className="flex flex-wrap gap-1">
+              <div className="grid grid-cols-3 sm:flex gap-1.5">
                 {CRAM_DURATION_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => setCramPrefs((p) => ({ ...p, sessionDuration: value }))}
-                    className={`px-2.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                    className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
                       cramPrefs.sessionDuration === value
                         ? "bg-accent text-primary border-accent shadow-sm"
                         : "border-border dark:border-border-dark bg-card dark:bg-card-dark text-muted hover:text-foreground hover:border-foreground/20"
@@ -250,49 +268,50 @@ export default function CramSession({ initialDate }: CramSessionProps) {
               </div>
             </div>
 
-            {/* Group size */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="cram-group-size" className="text-[10px] font-semibold text-muted uppercase tracking-wider">Group</label>
-              <select
-                id="cram-group-size"
-                value={cramPrefs.groupSize}
-                onChange={(e) => setCramPrefs((p) => ({ ...p, groupSize: parseInt(e.target.value) }))}
-                className="pl-4 pr-10 py-2.5 rounded-xl text-xs font-semibold border border-border dark:border-border-dark bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat"
-              >
-                <option value={1}>Just me</option>
-                <option value={2}>2 people</option>
-                <option value={4}>3–4</option>
-                <option value={6}>5–6</option>
-                <option value={8}>7–8</option>
-                <option value={10}>9–10</option>
-                <option value={14}>11–14</option>
-                <option value={20}>15+</option>
-              </select>
-            </div>
+            {/* Group + Building row */}
+            <div className="grid grid-cols-2 sm:contents gap-3">
+              <div className="flex flex-col gap-1.5 sm:gap-1">
+                <label htmlFor="cram-group-size" className="text-[10px] font-semibold text-muted uppercase tracking-wider">Group</label>
+                <select
+                  id="cram-group-size"
+                  value={cramPrefs.groupSize}
+                  onChange={(e) => setCramPrefs((p) => ({ ...p, groupSize: parseInt(e.target.value) }))}
+                  className="w-full pl-4 pr-10 py-2.5 rounded-xl text-xs font-semibold border border-border dark:border-border-dark bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat"
+                >
+                  <option value={1}>Just me</option>
+                  <option value={2}>2 people</option>
+                  <option value={4}>3–4</option>
+                  <option value={6}>5–6</option>
+                  <option value={8}>7–8</option>
+                  <option value={10}>9–10</option>
+                  <option value={14}>11–14</option>
+                  <option value={20}>15+</option>
+                </select>
+              </div>
 
-            {/* Building */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="cram-building" className="text-[10px] font-semibold text-muted uppercase tracking-wider">Building</label>
-              <select
-                id="cram-building"
-                value={cramPrefs.locationPreference === "any" ? "any" : String(cramPrefs.locationPreference)}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setCramPrefs((p) => ({ ...p, locationPreference: v === "any" ? "any" : parseInt(v) }));
-                }}
-                className="pl-4 pr-10 py-2.5 rounded-xl text-xs font-semibold border border-border dark:border-border-dark bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat"
-              >
-                <option value="any">Either</option>
-                {LOCATIONS.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.shortName}</option>
-                ))}
-              </select>
+              <div className="flex flex-col gap-1.5 sm:gap-1">
+                <label htmlFor="cram-building" className="text-[10px] font-semibold text-muted uppercase tracking-wider">Building</label>
+                <select
+                  id="cram-building"
+                  value={cramPrefs.locationPreference === "any" ? "any" : String(cramPrefs.locationPreference)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCramPrefs((p) => ({ ...p, locationPreference: v === "any" ? "any" : parseInt(v) }));
+                  }}
+                  className="w-full pl-4 pr-10 py-2.5 rounded-xl text-xs font-semibold border border-border dark:border-border-dark bg-card dark:bg-card-dark text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat"
+                >
+                  <option value="any">Either</option>
+                  {LOCATIONS.map((loc) => (
+                    <option key={loc.id} value={loc.id}>{loc.shortName}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Search button */}
             <button
               onClick={runCramSearch}
-              className="px-5 py-2 rounded-lg bg-accent text-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer shadow-sm flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-lg bg-accent text-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -306,14 +325,14 @@ export default function CramSession({ initialDate }: CramSessionProps) {
         </div>
       )}
 
-      {cramStep === "loading" && (
+      {!collapsed && cramStep === "loading" && (
         <div className="px-6 sm:px-8 py-6 flex items-center justify-center gap-3">
           <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
           <p className="text-sm font-semibold text-foreground">Scanning {cramDateDisplay}...</p>
         </div>
       )}
 
-      {cramStep === "results" && (
+      {!collapsed && cramStep === "results" && (
         <div>
           {/* Summary bar */}
           <div className={`px-6 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-2 border-b ${

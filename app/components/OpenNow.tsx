@@ -7,6 +7,7 @@ import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 import { bookingUrl } from "../lib/booking-url";
 import { addBookingRecord } from "../lib/booking-history";
 import { useFavorites } from "../lib/favorites";
+import { BookingDateModal } from "./BookLink";
 import { SlotData } from "./TimeGrid";
 
 interface OpenNowProps {
@@ -92,6 +93,7 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
   const isToday = date === today;
 
   const [expanded, setExpanded] = useState(false);
+  const [modalHref, setModalHref] = useState<string | null>(null);
 
   const openRooms = useMemo(() => {
     const results = findOpenRooms(slots, rooms, today);
@@ -159,7 +161,7 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
           });
 
           return (
-            <div key={nr.room.id} className="flex items-center gap-3 px-5 py-3">
+            <div key={nr.room.id} className="flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3">
               {/* Room info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -198,11 +200,14 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => addBookingRecord(
-                    nr.room.id, nr.room.name, date,
-                    nr.firstSlot.start, nr.lastSlot.end,
-                    nr.room.locationId, nr.room.groupId
-                  )}
+                  onClick={(e) => {
+                    addBookingRecord(
+                      nr.room.id, nr.room.name, date,
+                      nr.firstSlot.start, nr.lastSlot.end,
+                      nr.room.locationId, nr.room.groupId
+                    );
+                    if (!isToday) { e.preventDefault(); setModalHref(url); }
+                  }}
                   className="px-3.5 py-2 rounded-xl text-xs font-bold bg-available text-white hover:bg-available/85 transition-colors cursor-pointer"
                 >
                   Book
@@ -221,6 +226,13 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
           </span>
         </div>
       )}
+
+      <BookingDateModal
+        open={modalHref !== null}
+        onClose={() => setModalHref(null)}
+        href={modalHref ?? ""}
+        slotDate={date}
+      />
     </div>
   );
 }

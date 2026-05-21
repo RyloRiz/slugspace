@@ -168,13 +168,13 @@ export default function RoomCards({ slots, rooms, date, today, filter }: RoomCar
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
       {roomData.map(({ room, blocks, status }, idx) => {
         const faved = isFavorite(room.id);
         return (
           <div
             key={room.id}
-            className={`relative rounded-2xl border p-5 transition-all hover:shadow-lg hover:-translate-y-0.5 ${
+            className={`relative rounded-2xl border p-4 sm:p-5 transition-all hover:shadow-lg hover:-translate-y-0.5 ${
               status === "open"
                 ? "border-available/20 bg-card dark:bg-card-dark hover:border-available/40 hover:shadow-available/5"
                 : "border-border dark:border-border-dark bg-card dark:bg-card-dark opacity-55 hover:opacity-75"
@@ -222,7 +222,7 @@ export default function RoomCards({ slots, rooms, date, today, filter }: RoomCar
               >
                 {room.name}
               </h3>
-              <p className="text-xs text-muted mt-1 flex items-center gap-1.5">
+              <p className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
                 <span>{room.floor} Floor</span>
                 {room.features.length > 0 && (
                   <>

@@ -516,7 +516,7 @@ export default function BookingDashboard() {
             {/* Quick toggles */}
             <button
               onClick={() => setOnlyAvailable(!onlyAvailable)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+              className={`inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                 onlyAvailable
                   ? "bg-available/8 text-available border-available/20"
                   : "text-muted hover:text-foreground border-transparent hover:bg-surface dark:hover:bg-surface-dark"
@@ -528,7 +528,7 @@ export default function BookingDashboard() {
             {favoriteIds.length > 0 && (
               <button
                 onClick={() => setOnlyFavorites(!onlyFavorites)}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                   onlyFavorites
                     ? "bg-accent/8 text-accent border-accent/20"
                     : "text-muted hover:text-foreground border-transparent hover:bg-surface dark:hover:bg-surface-dark"
@@ -544,7 +544,7 @@ export default function BookingDashboard() {
             {/* More filters */}
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+              className={`inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                 filtersOpen || advancedFilterCount > 0
                   ? "bg-primary/5 text-primary dark:text-secondary border-primary/15 dark:border-secondary/15"
                   : "text-muted hover:text-foreground border-transparent hover:bg-surface dark:hover:bg-surface-dark"
@@ -973,8 +973,8 @@ export default function BookingDashboard() {
           <div className="absolute inset-0 bg-primary/60" />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/40 to-primary/80" />
           <div className="absolute inset-0 flex items-end">
-            <div className="w-full py-4">
-              <p className="text-center text-xs text-white/50">
+            <div className="w-full py-4 px-5">
+              <p className="text-center text-[11px] sm:text-xs text-white/50 leading-relaxed">
                 Data sourced from{" "}
                 <a
                   href={homePageUrl()}
@@ -984,8 +984,12 @@ export default function BookingDashboard() {
                 >
                   UCSC Library Room Reservations
                 </a>
-                . Not affiliated with UC Santa Cruz. Built by&nbsp;
-				<a
+                .
+                <br className="sm:hidden" />
+                {" "}Not affiliated with UC Santa Cruz.
+                <br className="sm:hidden" />
+                {" "}Built by{" "}
+                <a
                   href={'https://rizwaan.dev'}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -993,7 +997,7 @@ export default function BookingDashboard() {
                 >
                   Rizwaan Bana
                 </a>
-				.
+                .
               </p>
             </div>
           </div>

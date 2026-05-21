@@ -98,7 +98,7 @@ export default function AvailabilityTimeline({ slots, date, today }: Availabilit
   return (
     <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-5 sm:p-6">
       {/* Header row */}
-      <div className="flex items-start justify-between gap-3 mb-5">
+      <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between sm:gap-3 mb-5">
         <div>
           <h2
             className="text-base font-normal text-foreground"
@@ -112,7 +112,7 @@ export default function AvailabilityTimeline({ slots, date, today }: Availabilit
         </div>
 
         {/* Insight pills */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {bestWindow && bestWindow.avgRate > 0.2 && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-available/8 text-available text-[10px] font-bold border border-available/15">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

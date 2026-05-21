@@ -11,6 +11,7 @@ import { useRoomNotes } from "../../lib/room-notes";
 import { isSlotAvailable, isSlotFuture } from "../../lib/slots";
 import { getRoomTrend, formatTrendHour, formatDayName, trendLabel } from "../../lib/trends";
 import { SlotData } from "../../components/TimeGrid";
+import { BookingDateModal } from "../../components/BookLink";
 
 const LIBRARY_IMAGES: Record<number, { hero: string; alt: string }> = {
   16578: { hero: "/libraries/se-hero.png", alt: "Science & Engineering Library" },
@@ -117,6 +118,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
   const [slots, setSlots] = useState<SlotData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFullSchedule, setShowFullSchedule] = useState(false);
+  const [modalHref, setModalHref] = useState<string | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const { isFavorite, toggle: toggleFavorite } = useFavorites();
 
@@ -275,7 +277,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                     {room.floor} floor
                   </span>
                   {room.features.map((f) => (
-                    <span key={f} className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/20 backdrop-blur-sm text-xs font-medium text-accent">
+                    <span key={f} className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-accent/20 backdrop-blur-sm text-[11px] sm:text-xs font-medium text-accent">
                       {f}
                     </span>
                   ))}
@@ -371,6 +373,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
               href={bookingUrl(room.id)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={!isToday ? (e) => { e.preventDefault(); setModalHref(bookingUrl(room.id)); } : undefined}
               className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs font-semibold text-primary dark:text-secondary bg-primary/5 hover:bg-primary/10 border border-primary/15 dark:border-secondary/15 hover:border-primary/25 transition-all cursor-pointer"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -449,20 +452,20 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 text-center">
-                <p className="text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
+              <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-3 sm:p-4 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
                   {bookableSlots.length}
                 </p>
                 <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-0.5">Available</p>
               </div>
-              <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 text-center">
-                <p className="text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
+              <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-3 sm:p-4 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
                   {takenSlots.length}
                 </p>
                 <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-0.5">Booked</p>
               </div>
-              <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 text-center">
-                <p className={`text-2xl font-bold tabular-nums ${availPct > 50 ? "text-available" : availPct > 0 ? "text-accent" : "text-booked"}`} style={{ fontFamily: "var(--font-display)" }}>
+              <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-3 sm:p-4 text-center">
+                <p className={`text-xl sm:text-2xl font-bold tabular-nums ${availPct > 50 ? "text-available" : availPct > 0 ? "text-accent" : "text-booked"}`} style={{ fontFamily: "var(--font-display)" }}>
                   {availPct}%
                 </p>
                 <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-0.5">Open</p>
@@ -501,10 +504,10 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                       return (
                         <span
                           key={m}
-                          className="absolute text-[10px] text-muted font-medium -translate-x-1/2 tabular-nums"
+                          className="absolute text-[9px] sm:text-[10px] text-muted font-medium -translate-x-1/2 tabular-nums whitespace-nowrap"
                           style={{ left: `${Math.min(Math.max(pct, 3), 97)}%` }}
                         >
-                          {display} {ampm}
+                          {display}{ampm}
                         </span>
                       );
                     })}
@@ -568,7 +571,10 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                         href={bookingUrl(room.id, { start: block.start, end: bookEnd, roomName: room.name })}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() => addBookingRecord(room.id, room.name, date, block.start, bookEnd, room.locationId, room.groupId)}
+                        onClick={(e) => {
+                          addBookingRecord(room.id, room.name, date, block.start, bookEnd, room.locationId, room.groupId);
+                          if (!isToday) { e.preventDefault(); setModalHref(bookingUrl(room.id, { start: block.start, end: bookEnd, roomName: room.name })); }
+                        }}
                         className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-card dark:bg-card-dark border border-available/15 hover:border-available/40 hover:shadow-lg hover:shadow-available/5 transition-all cursor-pointer group"
                       >
                         <div className="min-w-0">
@@ -643,7 +649,9 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                   </div>
 
                   {/* Heatmap grid */}
-                  <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+                  <div className="relative">
+                  <div className="overflow-x-auto -mx-1 px-1">
+                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-card dark:from-card-dark to-transparent pointer-events-none z-10 sm:hidden" />
                     <div className="min-w-[420px]">
                       {/* Hour labels */}
                       <div className="flex items-center gap-1 mb-1">
@@ -712,6 +720,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                         <span className="text-[9px] text-muted">No data</span>
                       </div>
                     </div>
+                  </div>
                   </div>
 
                   {/* Best slots */}
@@ -790,13 +799,16 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                             href={bookingUrl(room.id, { start: si.slot.start, end: si.slot.end, roomName: room.name })}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => addBookingRecord(room.id, room.name, date, si.slot.start, si.slot.end, room.locationId, room.groupId)}
-                            className="px-4 py-1.5 rounded-xl text-xs font-bold bg-available/10 text-available hover:bg-available/20 transition-colors cursor-pointer"
+                            onClick={(e) => {
+                              addBookingRecord(room.id, room.name, date, si.slot.start, si.slot.end, room.locationId, room.groupId);
+                              if (!isToday) { e.preventDefault(); setModalHref(bookingUrl(room.id, { start: si.slot.start, end: si.slot.end, roomName: room.name })); }
+                            }}
+                            className="px-4 py-2 rounded-xl text-xs font-bold bg-available/10 text-available hover:bg-available/20 transition-colors cursor-pointer"
                           >
                             Book
                           </a>
                         ) : (
-                          <span className="px-4 py-1.5 rounded-xl text-xs font-medium bg-booked/8 text-booked">
+                          <span className="px-4 py-2 rounded-xl text-xs font-medium bg-booked/8 text-booked">
                             Taken
                           </span>
                         )}
@@ -809,6 +821,13 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
           </div>
         )}
       </main>
+
+      <BookingDateModal
+        open={modalHref !== null}
+        onClose={() => setModalHref(null)}
+        href={modalHref ?? ""}
+        slotDate={date}
+      />
 
       {/* ── Footer ── */}
       <footer className="border-t border-border dark:border-border-dark py-5 mt-auto">
