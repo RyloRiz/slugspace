@@ -436,6 +436,18 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
         {!loading && slots.length > 0 && (
           <div className="space-y-6">
             {/* Stats row */}
+            <div className="space-y-3">
+            <div>
+              <h2
+                className="text-base font-normal text-foreground"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {isToday ? "Today\u2019s Stats" : "Day Stats"}
+              </h2>
+              <p className="text-[11px] text-muted mt-0.5">
+                Slot availability for {room.name}
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-4 text-center">
                 <p className="text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
@@ -455,6 +467,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                 </p>
                 <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-0.5">Open</p>
               </div>
+            </div>
             </div>
 
             {/* Timeline card */}

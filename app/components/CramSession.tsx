@@ -167,7 +167,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
   return (
     <div className="rounded-2xl border border-accent/20 bg-accent/3 overflow-hidden">
       {cramError && (
-        <div className="border-b border-booked/20 bg-booked/5 px-5 py-3 text-sm text-booked flex items-center gap-3" role="alert">
+        <div className="border-b border-booked/20 bg-booked/5 px-6 sm:px-8 py-3 text-sm text-booked flex items-center gap-3" role="alert">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
@@ -176,7 +176,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
       )}
 
       {cramStep === "setup" && (
-        <div className="px-5 py-4">
+        <div className="px-6 sm:px-8 py-4">
           {/* Title row */}
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
@@ -307,7 +307,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
       )}
 
       {cramStep === "loading" && (
-        <div className="px-5 py-6 flex items-center justify-center gap-3">
+        <div className="px-6 sm:px-8 py-6 flex items-center justify-center gap-3">
           <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
           <p className="text-sm font-semibold text-foreground">Scanning {cramDateDisplay}...</p>
         </div>
@@ -316,7 +316,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
       {cramStep === "results" && (
         <div>
           {/* Summary bar */}
-          <div className={`px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 border-b ${
+          <div className={`px-6 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-2 border-b ${
             cramResults.length > 0
               ? "border-available/20 bg-available/5"
               : "border-booked/20 bg-booked/5"
@@ -371,7 +371,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                 const faved = isFavorite(block.room.id);
 
                 return (
-                  <div key={`${block.room.id}-${block.startTime}`} className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 hover:bg-available/3 transition-colors">
+                  <div key={`${block.room.id}-${block.startTime}`} className="flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 hover:bg-available/3 transition-colors">
                     <div className="shrink-0 text-center min-w-[56px] sm:min-w-[68px]">
                       <p className="text-xs sm:text-sm font-bold text-foreground tabular-nums">{formatTime(block.startTime)}</p>
                       <p className="text-[10px] text-muted tabular-nums">{formatTime(block.endTime)}</p>
@@ -409,7 +409,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
               })}
             </div>
           ) : (
-            <div className="px-5 py-6 text-center">
+            <div className="px-6 sm:px-8 py-6 text-center">
               <p className="text-xs text-muted">Try a different date, shorter duration, or a different building.</p>
             </div>
           )}

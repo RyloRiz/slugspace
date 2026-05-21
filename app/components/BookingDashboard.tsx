@@ -16,6 +16,8 @@ import CramSession from "./CramSession";
 import AlertPanel from "./AlertPanel";
 import BookingQueue from "./BookingQueue";
 import BookingHistory from "./BookingHistory";
+import OpenNow from "./OpenNow";
+import AvailabilityTimeline from "./AvailabilityTimeline";
 import { useFilterPresets, FilterPreset } from "../lib/filter-presets";
 
 type ViewMode = "cards" | "grid";
@@ -422,6 +424,13 @@ export default function BookingDashboard() {
       </div>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-5 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        {/* ── Open Right Now ── */}
+        {!loading && !error && slots.length > 0 && (
+          <div className="animate-fade-in-up" style={{ animationDelay: "0.03s" }}>
+            <OpenNow slots={slots} rooms={rooms} date={date} today={todayStr()} />
+          </div>
+        )}
+
         {/* ── Quick Book ── */}
         {!loading && !error && (
           <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
@@ -431,8 +440,26 @@ export default function BookingDashboard() {
 
         {/* ── Quick Stats ── */}
         {!loading && !error && slots.length > 0 && (
-          <div className="animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
+          <div className="animate-fade-in-up space-y-3" style={{ animationDelay: "0.08s" }}>
+            <div>
+              <h2
+                className="text-base sm:text-lg font-normal text-foreground"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                At a Glance
+              </h2>
+              <p className="text-[11px] text-muted mt-0.5">
+                Current availability snapshot for {currentLocation.shortName}
+              </p>
+            </div>
             <QuickStats slots={slots} rooms={rooms} today={todayStr()} date={date} />
+          </div>
+        )}
+
+        {/* ── Availability Timeline ── */}
+        {!loading && !error && slots.length > 0 && (
+          <div className="animate-fade-in-up" style={{ animationDelay: "0.085s" }}>
+            <AvailabilityTimeline slots={slots} rooms={rooms} date={date} today={todayStr()} />
           </div>
         )}
 
@@ -443,10 +470,23 @@ export default function BookingDashboard() {
           </div>
         )}
 
+        {/* ── All Rooms section title ── */}
+        <div className="animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+          <h2
+            className="text-base sm:text-lg font-normal text-foreground"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            All Rooms
+          </h2>
+          <p className="text-[11px] text-muted mt-0.5">
+            Browse and filter study rooms across {currentLocation.shortName}
+          </p>
+        </div>
+
         {/* ── Toolbar ── */}
         <div
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-3 border-y border-border dark:border-border-dark animate-fade-in-up"
-          style={{ animationDelay: "0.1s" }}
+          style={{ animationDelay: "0.12s" }}
         >
           <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
             {/* Search */}

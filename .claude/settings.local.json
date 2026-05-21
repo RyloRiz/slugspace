@@ -35,7 +35,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
       "Bash(gh api:*)",
-      "Bash(gh search:*)"
+      "Bash(gh search:*)",
+      "Bash(curl -s \"http://localhost:3000/api/availability?start=2026-05-21&end=2026-05-22&lid=16578&gid=34972\")"
     ]
   }
 }
