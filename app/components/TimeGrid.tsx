@@ -134,15 +134,8 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
     else if (sortMode === "name") data.sort((a, b) => a.room.name.localeCompare(b.room.name));
     else if (sortMode === "capacity") data.sort((a, b) => b.room.capacity - a.room.capacity);
 
-    // Favorites first
-    data.sort((a, b) => {
-      const aFav = isFavorite(a.room.id) ? 0 : 1;
-      const bFav = isFavorite(b.room.id) ? 0 : 1;
-      return aFav - bFav;
-    });
-
     return data;
-  }, [rooms, timeSlots, slotMap, today, filter, isFavorite]);
+  }, [rooms, timeSlots, slotMap, today, filter]);
 
   const hourMarkers = useMemo(() => {
     const markers: { idx: number; label: string }[] = [];

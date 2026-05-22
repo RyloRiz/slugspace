@@ -193,7 +193,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-50 bg-primary text-white">
+      <header className="sticky top-0 z-50 bg-primary text-white pt-[env(safe-area-inset-top)]">
         <div className="max-w-4xl mx-auto px-5 py-3">
           <div className="flex items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-3 shrink-0 group cursor-pointer">

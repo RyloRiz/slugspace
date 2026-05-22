@@ -250,7 +250,7 @@ export default function BookingDashboard() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-50 bg-primary text-white">
+      <header className="sticky top-0 z-50 bg-primary text-white pt-[env(safe-area-inset-top)]">
         <div className="max-w-6xl mx-auto px-5 py-3.5">
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}

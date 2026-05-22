@@ -138,12 +138,8 @@ export default function RoomCards({ slots, rooms, date, today, filter }: RoomCar
     roomData.splice(0, roomData.length, ...roomData.filter((r) => r.bookableCount > 0));
   }
 
-  // Sort: favorites always first, then by chosen sort
+  // Sort by chosen sort mode
   roomData.sort((a, b) => {
-    const aFav = isFavorite(a.room.id) ? 1 : 0;
-    const bFav = isFavorite(b.room.id) ? 1 : 0;
-    if (aFav !== bFav) return bFav - aFav;
-
     if (filter.sort === "name") {
       return a.room.name.localeCompare(b.room.name);
     }
