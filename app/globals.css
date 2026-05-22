@@ -110,6 +110,15 @@ body::before {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
+@keyframes timer-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+}
+
+.animate-timer-warning {
+  animation: timer-pulse 1.5s ease-in-out infinite;
+}
+
 /* Hide scrollbar for horizontal scroll containers */
 .scrollbar-none {
   -ms-overflow-style: none;

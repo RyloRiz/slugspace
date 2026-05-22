@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useBookingHistory, BookingRecord } from "../lib/booking-history";
 import { getRoomById, LOCATIONS } from "../lib/rooms";
 import { bookingUrl } from "../lib/booking-url";
+import { useStudySessions, findSessionForBooking, formatDurationShort } from "../lib/study-sessions";
 
 function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -51,6 +52,7 @@ function getLocationShortName(locationId: number): string {
 
 export default function BookingHistory() {
   const { history, remove, clearAll } = useBookingHistory();
+  const { sessions } = useStudySessions();
   const [expanded, setExpanded] = useState(false);
 
   if (history.length === 0) return null;
@@ -89,7 +91,7 @@ export default function BookingHistory() {
       {/* Records */}
       <div className="border-t border-border dark:border-border-dark divide-y divide-border dark:divide-border-dark">
         {shown.map((record) => (
-          <HistoryRow key={record.id} record={record} today={today} onRemove={remove} />
+          <HistoryRow key={record.id} record={record} today={today} onRemove={remove} studySession={findSessionForBooking(sessions, record.roomId, record.date)} />
         ))}
       </div>
 
@@ -114,7 +116,7 @@ export default function BookingHistory() {
   );
 }
 
-function HistoryRow({ record, today, onRemove }: { record: BookingRecord; today: string; onRemove: (id: string) => void }) {
+function HistoryRow({ record, today, onRemove, studySession }: { record: BookingRecord; today: string; onRemove: (id: string) => void; studySession?: import("../lib/study-sessions").StudySession }) {
   const room = getRoomById(record.roomId);
   const isPast = record.date < today;
   const rebookDate = nextWeekDate(record.date);
@@ -140,6 +142,15 @@ function HistoryRow({ record, today, onRemove }: { record: BookingRecord; today:
           {formatDateShort(record.date)} · {formatTime(record.start)} – {formatTime(record.end)}
           <span className="text-muted/50 ml-1.5">· {timeAgo(record.bookedAt)}</span>
         </p>
+        {studySession && (
+          <p className="text-[10px] text-available font-medium mt-0.5 flex items-center gap-1">
+            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Studied {formatDurationShort(studySession.duration)}
+            {studySession.pomodorosCompleted > 0 && ` · ${studySession.pomodorosCompleted} pomo${studySession.pomodorosCompleted !== 1 ? "s" : ""}`}
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         {/* Rebook next week */}

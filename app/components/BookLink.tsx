@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
+import SessionPrompt from "./SessionPrompt";
 
 function formatDateNice(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -21,9 +22,10 @@ interface BookingDateModalProps {
   onClose: () => void;
   href: string;
   slotDate: string;
+  onBookConfirmed?: () => void;
 }
 
-export function BookingDateModal({ open, onClose, href, slotDate }: BookingDateModalProps) {
+export function BookingDateModal({ open, onClose, href, slotDate, onBookConfirmed }: BookingDateModalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export function BookingDateModal({ open, onClose, href, slotDate }: BookingDateM
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={onClose}
+                  onClick={() => { onClose(); onBookConfirmed?.(); }}
                   className="flex-1 rounded-xl bg-primary dark:bg-secondary px-4 py-2.5 text-[13px] font-semibold text-white text-center hover:bg-primary-hover dark:hover:bg-secondary/80 transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
                 >
                   Open UCSC
@@ -158,11 +160,22 @@ interface BookLinkProps {
   className?: string;
   children?: React.ReactNode;
   onBook?: () => void;
+  roomId?: number;
+  roomName?: string;
+  slotStart?: string;
+  slotEnd?: string;
 }
 
-export default function BookLink({ href, slotDate, today, className, children, onBook }: BookLinkProps) {
+export default function BookLink({ href, slotDate, today, className, children, onBook, roomId, roomName, slotStart, slotEnd }: BookLinkProps) {
   const [showModal, setShowModal] = useState(false);
+  const [showSessionPrompt, setShowSessionPrompt] = useState(false);
   const isToday = slotDate === today;
+
+  const handleBookConfirmed = useCallback(() => {
+    if (roomId && roomName) {
+      setShowSessionPrompt(true);
+    }
+  }, [roomId, roomName]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -170,9 +183,12 @@ export default function BookLink({ href, slotDate, today, className, children, o
       if (!isToday) {
         e.preventDefault();
         setShowModal(true);
+      } else {
+        // Today: link opens directly, show session prompt
+        handleBookConfirmed();
       }
     },
-    [isToday, onBook]
+    [isToday, onBook, handleBookConfirmed]
   );
 
   return (
@@ -192,7 +208,20 @@ export default function BookLink({ href, slotDate, today, className, children, o
         onClose={() => setShowModal(false)}
         href={href}
         slotDate={slotDate}
+        onBookConfirmed={handleBookConfirmed}
       />
+
+      {roomId !== undefined && roomName && (
+        <SessionPrompt
+          open={showSessionPrompt}
+          onClose={() => setShowSessionPrompt(false)}
+          roomId={roomId}
+          roomName={roomName}
+          date={slotDate}
+          slotStart={slotStart}
+          slotEnd={slotEnd}
+        />
+      )}
     </>
   );
 }

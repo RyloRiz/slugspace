@@ -16,6 +16,7 @@ import CramSession from "./CramSession";
 import AlertPanel from "./AlertPanel";
 import BookingQueue from "./BookingQueue";
 import BookingHistory from "./BookingHistory";
+import StudyStats from "./StudyStats";
 import OpenNow from "./OpenNow";
 import AvailabilityTimeline from "./AvailabilityTimeline";
 import { useFilterPresets, FilterPreset } from "../lib/filter-presets";
@@ -467,6 +468,13 @@ export default function BookingDashboard() {
         {!loading && !error && (
           <div className="animate-fade-in-up" style={{ animationDelay: "0.09s" }}>
             <BookingHistory />
+          </div>
+        )}
+
+        {/* ── Study Stats ── */}
+        {!loading && !error && (
+          <div className="animate-fade-in-up" style={{ animationDelay: "0.095s" }}>
+            <StudyStats />
           </div>
         )}
 

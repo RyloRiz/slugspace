@@ -8,6 +8,7 @@ import { bookingUrl } from "../lib/booking-url";
 import { addBookingRecord } from "../lib/booking-history";
 import { useFavorites } from "../lib/favorites";
 import { BookingDateModal } from "./BookLink";
+import SessionPrompt from "./SessionPrompt";
 import { SlotData } from "./TimeGrid";
 
 interface OpenNowProps {
@@ -94,6 +95,7 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
 
   const [expanded, setExpanded] = useState(false);
   const [modalHref, setModalHref] = useState<string | null>(null);
+  const [sessionPromptRoom, setSessionPromptRoom] = useState<{ roomId: number; roomName: string; start: string; end: string } | null>(null);
 
   const openRooms = useMemo(() => {
     const results = findOpenRooms(slots, rooms, today);
@@ -206,7 +208,11 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
                       nr.firstSlot.start, nr.lastSlot.end,
                       nr.room.locationId, nr.room.groupId
                     );
-                    if (!isToday) { e.preventDefault(); setModalHref(url); }
+                    setSessionPromptRoom({ roomId: nr.room.id, roomName: nr.room.name, start: nr.firstSlot.start, end: nr.lastSlot.end });
+                    if (!isToday) {
+                      e.preventDefault();
+                      setModalHref(url);
+                    }
                   }}
                   className="px-3.5 py-2 rounded-xl text-xs font-bold bg-available text-white hover:bg-available/85 transition-colors cursor-pointer"
                 >
@@ -233,6 +239,18 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
         href={modalHref ?? ""}
         slotDate={date}
       />
+
+      {sessionPromptRoom && (
+        <SessionPrompt
+          open={sessionPromptRoom !== null && modalHref === null}
+          onClose={() => setSessionPromptRoom(null)}
+          roomId={sessionPromptRoom.roomId}
+          roomName={sessionPromptRoom.roomName}
+          date={date}
+          slotStart={sessionPromptRoom.start}
+          slotEnd={sessionPromptRoom.end}
+        />
+      )}
     </div>
   );
 }

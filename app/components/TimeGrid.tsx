@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Room } from "../lib/rooms";
 import { bookingUrl } from "../lib/booking-url";
 import { BookingDateModal } from "./BookLink";
+import SessionPrompt from "./SessionPrompt";
 import { useFavorites } from "../lib/favorites";
 import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 
@@ -83,6 +84,7 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
   const [hoveredRoom, setHoveredRoom] = useState<number | null>(null);
   const [hoveredSlotIdx, setHoveredSlotIdx] = useState<number | null>(null);
   const [modalHref, setModalHref] = useState<string | null>(null);
+  const [sessionPromptInfo, setSessionPromptInfo] = useState<{ roomId: number; roomName: string; start: string; end: string } | null>(null);
   const isToday = date === today;
   const { isFavorite } = useFavorites();
 
@@ -335,7 +337,10 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={!isToday ? (e) => { e.preventDefault(); setModalHref(href); } : undefined}
+                        onClick={(e) => {
+                          setSessionPromptInfo({ roomId: room.id, roomName: room.name, start: slot.start, end: slot.end });
+                          if (!isToday) { e.preventDefault(); setModalHref(href); }
+                        }}
                         {...cellProps}
                       />
                     );
@@ -386,6 +391,18 @@ export default function TimeGrid({ slots, rooms, date, today, filter }: TimeGrid
         href={modalHref ?? ""}
         slotDate={date}
       />
+
+      {sessionPromptInfo && (
+        <SessionPrompt
+          open={sessionPromptInfo !== null && modalHref === null}
+          onClose={() => setSessionPromptInfo(null)}
+          roomId={sessionPromptInfo.roomId}
+          roomName={sessionPromptInfo.roomName}
+          date={date}
+          slotStart={sessionPromptInfo.start}
+          slotEnd={sessionPromptInfo.end}
+        />
+      )}
     </div>
   );
 }

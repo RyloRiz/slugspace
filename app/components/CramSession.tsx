@@ -419,6 +419,10 @@ export default function CramSession({ initialDate }: CramSessionProps) {
                       slotDate={cramPrefs.date}
                       today={todayStr()}
                       onBook={() => addBookingRecord(block.room.id, block.room.name, cramPrefs.date, block.startTime, block.endTime, block.room.locationId, block.room.groupId)}
+                      roomId={block.room.id}
+                      roomName={block.room.name}
+                      slotStart={block.startTime}
+                      slotEnd={block.endTime}
                       className="px-3 sm:px-3.5 py-1.5 rounded-lg bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shrink-0"
                     >
                       Book

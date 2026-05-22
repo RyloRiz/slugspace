@@ -12,6 +12,7 @@ import { isSlotAvailable, isSlotFuture } from "../../lib/slots";
 import { getRoomTrend, formatTrendHour, formatDayName, trendLabel } from "../../lib/trends";
 import { SlotData } from "../../components/TimeGrid";
 import { BookingDateModal } from "../../components/BookLink";
+import SessionPrompt from "../../components/SessionPrompt";
 
 const LIBRARY_IMAGES: Record<number, { hero: string; alt: string }> = {
   16578: { hero: "/libraries/se-hero.png", alt: "Science & Engineering Library" },
@@ -119,6 +120,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
   const [loading, setLoading] = useState(true);
   const [showFullSchedule, setShowFullSchedule] = useState(false);
   const [modalHref, setModalHref] = useState<string | null>(null);
+  const [sessionPromptSlot, setSessionPromptSlot] = useState<{ start: string; end: string } | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const { isFavorite, toggle: toggleFavorite } = useFavorites();
 
@@ -573,6 +575,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           addBookingRecord(room.id, room.name, date, block.start, bookEnd, room.locationId, room.groupId);
+                          setSessionPromptSlot({ start: block.start, end: bookEnd });
                           if (!isToday) { e.preventDefault(); setModalHref(bookingUrl(room.id, { start: block.start, end: bookEnd, roomName: room.name })); }
                         }}
                         className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-card dark:bg-card-dark border border-available/15 hover:border-available/40 hover:shadow-lg hover:shadow-available/5 transition-all cursor-pointer group"
@@ -801,6 +804,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                             rel="noopener noreferrer"
                             onClick={(e) => {
                               addBookingRecord(room.id, room.name, date, si.slot.start, si.slot.end, room.locationId, room.groupId);
+                              setSessionPromptSlot({ start: si.slot.start, end: si.slot.end });
                               if (!isToday) { e.preventDefault(); setModalHref(bookingUrl(room.id, { start: si.slot.start, end: si.slot.end, roomName: room.name })); }
                             }}
                             className="px-4 py-2 rounded-xl text-xs font-bold bg-available/10 text-available hover:bg-available/20 transition-colors cursor-pointer"
@@ -827,6 +831,16 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
         onClose={() => setModalHref(null)}
         href={modalHref ?? ""}
         slotDate={date}
+      />
+
+      <SessionPrompt
+        open={sessionPromptSlot !== null && modalHref === null}
+        onClose={() => setSessionPromptSlot(null)}
+        roomId={room.id}
+        roomName={room.name}
+        date={date}
+        slotStart={sessionPromptSlot?.start}
+        slotEnd={sessionPromptSlot?.end}
       />
 
       {/* ── Footer ── */}

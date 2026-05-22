@@ -1313,6 +1313,10 @@ function ResultCard({ block, index }: { block: CandidateBlock; index: number }) 
             href={bookingUrl(block.room.id, { start: block.startTime, end: block.endTime, roomName: block.room.name })}
             slotDate={block.startTime.split(" ")[0]}
             today={todayStr()}
+            roomId={block.room.id}
+            roomName={block.room.name}
+            slotStart={block.startTime}
+            slotEnd={block.endTime}
             className="px-4 py-2 min-h-[36px] rounded-xl bg-available text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer inline-flex items-center shadow-sm shadow-available/20"
           >
             Book
