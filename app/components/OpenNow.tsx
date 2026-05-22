@@ -9,6 +9,7 @@ import { addBookingRecord } from "../lib/booking-history";
 import { useFavorites } from "../lib/favorites";
 import { BookingDateModal } from "./BookLink";
 import SessionPrompt from "./SessionPrompt";
+import Collapsible from "./ui/collapsible";
 import { SlotData } from "./TimeGrid";
 
 interface OpenNowProps {
@@ -141,7 +142,7 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
             {totalOpen} room{totalOpen !== 1 ? "s" : ""} open
           </span>
           <svg
-            className={`w-4 h-4 text-muted transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-muted transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -153,85 +154,87 @@ export default function OpenNow({ slots, rooms, date, today }: OpenNowProps) {
       </button>
 
       {/* Room rows — collapsible */}
-      {expanded && <div className="divide-y divide-border dark:divide-border-dark border-t border-border dark:border-border-dark">
-        {top.map((nr) => {
-          const isFav = isFavorite(nr.room.id);
-          const url = bookingUrl(nr.room.id, {
-            start: nr.firstSlot.start,
-            end: nr.lastSlot.end,
-            roomName: nr.room.name,
-          });
+      <Collapsible open={expanded}>
+        <div className="divide-y divide-border dark:divide-border-dark border-t border-border dark:border-border-dark">
+          {top.map((nr) => {
+            const isFav = isFavorite(nr.room.id);
+            const url = bookingUrl(nr.room.id, {
+              start: nr.firstSlot.start,
+              end: nr.lastSlot.end,
+              roomName: nr.room.name,
+            });
 
-          return (
-            <div key={nr.room.id} className="flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3">
-              {/* Room info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <Link
-                    href={`/room/${nr.room.id}?date=${date}`}
-                    className="text-[13px] font-semibold text-foreground hover:text-primary dark:hover:text-secondary transition-colors cursor-pointer truncate"
+            return (
+              <div key={nr.room.id} className="flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3">
+                {/* Room info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      href={`/room/${nr.room.id}?date=${date}`}
+                      className="text-[13px] font-semibold text-foreground hover:text-primary dark:hover:text-secondary transition-colors cursor-pointer truncate"
+                    >
+                      {nr.room.name}
+                    </Link>
+                    {isFav && (
+                      <svg className="w-3 h-3 text-accent shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-muted">
+                      {nr.room.capacity} seats · {nr.room.floor}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Time window + duration */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-right">
+                    <span className="text-[11px] text-muted tabular-nums block">
+                      {formatTime(nr.firstSlot.start)} – {formatTime(nr.lastSlot.end)}
+                    </span>
+                    <span className="text-[10px] font-bold text-available tabular-nums">
+                      {formatDuration(nr.freeMins)} free
+                    </span>
+                  </div>
+
+                  {/* Book button */}
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      addBookingRecord(
+                        nr.room.id, nr.room.name, date,
+                        nr.firstSlot.start, nr.lastSlot.end,
+                        nr.room.locationId, nr.room.groupId
+                      );
+                      setSessionPromptRoom({ roomId: nr.room.id, roomName: nr.room.name, start: nr.firstSlot.start, end: nr.lastSlot.end });
+                      if (!isToday) {
+                        e.preventDefault();
+                        setModalHref(url);
+                      }
+                    }}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-available text-white hover:bg-available/85 transition-colors cursor-pointer"
                   >
-                    {nr.room.name}
-                  </Link>
-                  {isFav && (
-                    <svg className="w-3 h-3 text-accent shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-muted">
-                    {nr.room.capacity} seats · {nr.room.floor}
-                  </span>
+                    Book
+                  </a>
                 </div>
               </div>
+            );
+          })}
 
-              {/* Time window + duration */}
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="text-right">
-                  <span className="text-[11px] text-muted tabular-nums block">
-                    {formatTime(nr.firstSlot.start)} – {formatTime(nr.lastSlot.end)}
-                  </span>
-                  <span className="text-[10px] font-bold text-available tabular-nums">
-                    {formatDuration(nr.freeMins)} free
-                  </span>
-                </div>
-
-                {/* Book button */}
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => {
-                    addBookingRecord(
-                      nr.room.id, nr.room.name, date,
-                      nr.firstSlot.start, nr.lastSlot.end,
-                      nr.room.locationId, nr.room.groupId
-                    );
-                    setSessionPromptRoom({ roomId: nr.room.id, roomName: nr.room.name, start: nr.firstSlot.start, end: nr.lastSlot.end });
-                    if (!isToday) {
-                      e.preventDefault();
-                      setModalHref(url);
-                    }
-                  }}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-available text-white hover:bg-available/85 transition-colors cursor-pointer"
-                >
-                  Book
-                </a>
-              </div>
+          {/* Footer */}
+          {totalOpen > 3 && (
+            <div className="px-5 py-2.5 border-t border-border dark:border-border-dark bg-surface/30 dark:bg-surface-dark/30 text-center">
+              <span className="text-[11px] text-muted">
+                +{totalOpen - 3} more room{totalOpen - 3 !== 1 ? "s" : ""} available
+              </span>
             </div>
-          );
-        })}
-      </div>}
-
-      {/* Footer */}
-      {expanded && totalOpen > 3 && (
-        <div className="px-5 py-2.5 border-t border-border dark:border-border-dark bg-surface/30 dark:bg-surface-dark/30 text-center">
-          <span className="text-[11px] text-muted">
-            +{totalOpen - 3} more room{totalOpen - 3 !== 1 ? "s" : ""} available
-          </span>
+          )}
         </div>
-      )}
+      </Collapsible>
 
       <BookingDateModal
         open={modalHref !== null}

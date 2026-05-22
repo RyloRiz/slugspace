@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Collapsible from "./ui/collapsible";
 import { useBookingHistory, BookingRecord } from "../lib/booking-history";
 import { getRoomById, LOCATIONS } from "../lib/rooms";
 import { bookingUrl } from "../lib/booking-url";
@@ -58,7 +59,7 @@ export default function BookingHistory() {
   if (history.length === 0) return null;
 
   const today = todayStr();
-  const shown = expanded ? history.slice(0, 10) : history.slice(0, 3);
+  const records = history.slice(0, 10);
 
   return (
     <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark overflow-hidden">
@@ -80,38 +81,30 @@ export default function BookingHistory() {
             <p className="text-[11px] text-muted">{history.length} booking{history.length !== 1 ? "s" : ""} tracked</p>
           </div>
         </div>
-        <svg
-          className={`w-4 h-4 text-muted transition-transform ${expanded ? "rotate-180" : ""}`}
-          fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); clearAll(); }}
+            className="text-[11px] text-muted hover:text-booked cursor-pointer font-medium"
+          >
+            Clear
+          </button>
+          <svg
+            className={`w-4 h-4 text-muted transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </div>
       </button>
 
       {/* Records */}
-      <div className="border-t border-border dark:border-border-dark divide-y divide-border dark:divide-border-dark">
-        {shown.map((record) => (
-          <HistoryRow key={record.id} record={record} today={today} onRemove={remove} studySession={findSessionForBooking(sessions, record.roomId, record.date)} />
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between px-5 py-3 border-t border-border dark:border-border-dark bg-surface/30 dark:bg-surface-dark/30">
-        {history.length > 3 && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-[11px] font-semibold text-primary dark:text-secondary hover:underline cursor-pointer"
-          >
-            {expanded ? "Show less" : `Show all ${history.length}`}
-          </button>
-        )}
-        <button
-          onClick={clearAll}
-          className="text-[11px] text-muted hover:text-booked cursor-pointer font-medium ml-auto"
-        >
-          Clear history
-        </button>
-      </div>
+      <Collapsible open={expanded}>
+        <div className="border-t border-border dark:border-border-dark divide-y divide-border dark:divide-border-dark">
+          {records.map((record) => (
+            <HistoryRow key={record.id} record={record} today={today} onRemove={remove} studySession={findSessionForBooking(sessions, record.roomId, record.date)} />
+          ))}
+        </div>
+      </Collapsible>
     </div>
   );
 }

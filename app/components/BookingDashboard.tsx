@@ -19,6 +19,7 @@ import BookingHistory from "./BookingHistory";
 import StudyStats from "./StudyStats";
 import OpenNow from "./OpenNow";
 import AvailabilityTimeline from "./AvailabilityTimeline";
+import Collapsible from "./ui/collapsible";
 import { useFilterPresets, FilterPreset } from "../lib/filter-presets";
 
 type ViewMode = "cards" | "grid";
@@ -613,8 +614,8 @@ export default function BookingDashboard() {
         </div>
 
         {/* ── Expandable Filter Panel ── */}
-        {filtersOpen && (
-          <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-5 space-y-5 -mt-3 shadow-sm">
+        <Collapsible open={filtersOpen} className="-mt-3">
+          <div className="rounded-2xl border border-border dark:border-border-dark bg-card dark:bg-card-dark p-5 space-y-5 shadow-sm">
             {/* Floor pills */}
             {allFloors.length > 1 && (
               <div className="space-y-2">
@@ -789,7 +790,7 @@ export default function BookingDashboard() {
               </div>
             )}
           </div>
-        )}
+        </Collapsible>
 
         {/* Active filter pills (when panel closed) */}
         {!filtersOpen && advancedFilterCount > 0 && (

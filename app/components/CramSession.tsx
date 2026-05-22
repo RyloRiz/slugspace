@@ -7,6 +7,7 @@ import { isSlotAvailable, isSlotFuture } from "../lib/slots";
 import { bookingUrl } from "../lib/booking-url";
 import BookLink from "./BookLink";
 import { useFavorites } from "../lib/favorites";
+import Collapsible from "./ui/collapsible";
 import { addBookingRecord } from "../lib/booking-history";
 import {
   CandidateBlock,
@@ -187,7 +188,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
           </div>
         </div>
         <svg
-          className={`w-4 h-4 text-muted transition-transform duration-200 ${collapsed ? "" : "rotate-180"}`}
+          className={`w-4 h-4 text-muted transition-transform duration-300 ${collapsed ? "" : "rotate-180"}`}
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={2}
@@ -197,7 +198,8 @@ export default function CramSession({ initialDate }: CramSessionProps) {
         </svg>
       </button>
 
-      {cramError && !collapsed && (
+      <Collapsible open={!collapsed}>
+      {cramError && (
         <div className="border-t border-booked/20 bg-booked/5 px-6 sm:px-8 py-3 text-sm text-booked flex items-center gap-3" role="alert">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
@@ -206,7 +208,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
         </div>
       )}
 
-      {!collapsed && cramStep === "setup" && (
+      {cramStep === "setup" && (
         <div className="px-6 sm:px-8 pb-4 pt-1">
           {/* Form — stacked on mobile, inline on desktop */}
           <div className="space-y-4 sm:space-y-0 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
@@ -325,14 +327,14 @@ export default function CramSession({ initialDate }: CramSessionProps) {
         </div>
       )}
 
-      {!collapsed && cramStep === "loading" && (
+      {cramStep === "loading" && (
         <div className="px-6 sm:px-8 py-6 flex items-center justify-center gap-3">
           <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
           <p className="text-sm font-semibold text-foreground">Scanning {cramDateDisplay}...</p>
         </div>
       )}
 
-      {!collapsed && cramStep === "results" && (
+      {cramStep === "results" && (
         <div>
           {/* Summary bar */}
           <div className={`px-6 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-2 border-b ${
@@ -438,6 +440,7 @@ export default function CramSession({ initialDate }: CramSessionProps) {
           )}
         </div>
       )}
+      </Collapsible>
     </div>
   );
 }

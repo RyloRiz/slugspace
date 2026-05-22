@@ -10,6 +10,7 @@ import {
 } from "../lib/study-sessions";
 import { requestNotificationPermission } from "../lib/alerts";
 import SessionPrompt from "./SessionPrompt";
+import Collapsible from "./ui/collapsible";
 
 function todayStr(): string {
   const d = new Date();
@@ -81,7 +82,7 @@ export default function StudyStats() {
             </span>
           )}
           <svg
-            className={`w-4 h-4 text-muted transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-muted transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
             fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -89,7 +90,7 @@ export default function StudyStats() {
         </div>
       </button>
 
-      {expanded && (
+      <Collapsible open={expanded}>
         <div className="border-t border-border dark:border-border-dark">
           {/* Stats Grid */}
           <div className="grid grid-cols-3 divide-x divide-border dark:divide-border-dark">
@@ -254,7 +255,7 @@ export default function StudyStats() {
             <ClearHistoryButton />
           </div>
         </div>
-      )}
+      </Collapsible>
 
       <SessionPrompt
         open={showManualPrompt}

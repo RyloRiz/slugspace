@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAlerts, requestNotificationPermission, canNotify } from "../lib/alerts";
+import Collapsible from "./ui/collapsible";
 
 function formatDateNice(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -80,8 +81,8 @@ export default function AlertPanel() {
         )}
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl bg-card dark:bg-card-dark border border-border dark:border-border-dark shadow-2xl shadow-black/20 z-50 overflow-hidden">
+      <Collapsible open={open} className="absolute right-0 top-full mt-2 w-80 sm:w-96 z-50">
+        <div className="rounded-2xl bg-card dark:bg-card-dark border border-border dark:border-border-dark shadow-2xl shadow-black/20 overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-border dark:border-border-dark flex items-center justify-between">
             <h3 className="text-sm font-bold text-foreground">Slot Watches</h3>
@@ -200,7 +201,7 @@ export default function AlertPanel() {
             </div>
           )}
         </div>
-      )}
+      </Collapsible>
     </div>
   );
 }

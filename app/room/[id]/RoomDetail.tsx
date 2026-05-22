@@ -13,6 +13,7 @@ import { getRoomTrend, formatTrendHour, formatDayName, trendLabel } from "../../
 import { SlotData } from "../../components/TimeGrid";
 import { BookingDateModal } from "../../components/BookLink";
 import SessionPrompt from "../../components/SessionPrompt";
+import Collapsible from "../../components/ui/collapsible";
 
 const LIBRARY_IMAGES: Record<number, { hero: string; alt: string }> = {
   16578: { hero: "/libraries/se-hero.png", alt: "Science & Engineering Library" },
@@ -759,14 +760,14 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                   All {slotInfos.length} time slots
                 </span>
                 <svg
-                  className={`w-4 h-4 text-muted transition-transform duration-200 ${showFullSchedule ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-muted transition-transform duration-300 ${showFullSchedule ? "rotate-180" : ""}`}
                   fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                 </svg>
               </button>
 
-              {showFullSchedule && (
+              <Collapsible open={showFullSchedule}>
                 <div className="border-t border-border dark:border-border-dark divide-y divide-border/50 dark:divide-border-dark/50">
                   {slotInfos.map((si) => (
                     <div
@@ -820,7 +821,7 @@ export default function RoomDetail({ room, initialDate }: { room: Room; initialD
                     </div>
                   ))}
                 </div>
-              )}
+              </Collapsible>
             </div>
           </div>
         )}
