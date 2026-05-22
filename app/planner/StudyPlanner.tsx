@@ -359,7 +359,7 @@ export default function StudyPlanner() {
         </div>
 
         {/* Nav bar */}
-        <div className="relative z-10 max-w-2xl mx-auto px-4 pt-4 pb-2">
+        <div className="relative z-10 max-w-2xl mx-auto px-4 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}>
           <div className="flex items-center justify-between">
             <Link
               href="/"
