@@ -19,6 +19,8 @@ const figtree = Figtree({
 export const viewport: Viewport = {
   themeColor: "#003c6c",
   viewportFit: "cover",
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export const metadata: Metadata = {
