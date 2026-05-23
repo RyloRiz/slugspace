@@ -111,6 +111,11 @@ export default function RootLayout({
     >
       <head>
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
+		<script
+          defer
+          src="https://cloud.umami.is/script.js"
+          data-website-id="70623c12-b5e4-4f24-bfee-bf477dd6b553"
+        />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <PageTransition>{children}</PageTransition>
